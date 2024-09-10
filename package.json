@@ -1,0 +1,24 @@
+{
+  "name": "osm-reader",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "read-elements": "node --env-file=.env.production readElements.mjs",
+    "read-tags": "node --env-file=.env.production readTags.mjs"
+  },
+  "dependencies": {
+    "cookie-parser": "~1.4.4",
+    "debug": "~2.6.9",
+    "express": "~4.16.1",
+    "http-errors": "~1.6.3",
+    "morgan": "~1.9.1",
+    "postgres": "^3.4.4",
+    "xml-stream-saxjs": "^0.4.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.10.0",
+    "eslint": "^9.10.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.3.3"
+  }
+}

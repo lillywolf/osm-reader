@@ -1,0 +1,18 @@
+services:
+  read-elements:
+    build:
+      context: Dockerfile.elements
+      args:
+        - SUPABASE_HOST='aws-0-us-west-1.pooler.supabase.com'
+        - SUPABASE_PORT='5432'
+        - SUPABASE_USER='postgres.hqyopumdlnawznqrcnho'
+        - SUPABASE_PASSWORD='XIJAJP4YJnNcZuWu'
+
+  read-tags:
+    build:
+      context: Dockerfile.tags
+      args:
+        - SUPABASE_HOST='aws-0-us-west-1.pooler.supabase.com'
+        - SUPABASE_PORT='5432'
+        - SUPABASE_USER='postgres.hqyopumdlnawznqrcnho'
+        - SUPABASE_PASSWORD='XIJAJP4YJnNcZuWu'

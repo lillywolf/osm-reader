@@ -1,0 +1,23 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: check out code
+        uses: actions/checkout@v2
+
+      - name: build docker image
+        run: docker build -t lillywolf/osm-reader:latest .
+
+      - name: push docker image
+        run: docker push lillywolf/osm-reader:latest
+
+      - name: deploy to kubernetes
+        uses: kubectl/action@v2
+        with:
+          args: apply -f deploy.yaml

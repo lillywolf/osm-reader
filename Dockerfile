@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install curl
 RUN curl -LJO https://github.com/Backblaze/B2_Command_Line_Tool/releases/download/v4.1.0/b2-linux
 RUN ls -la
 RUN chmod +x b2-linux
-RUN ./b2-linux account authorize 005205ae54896c60000000003 K005fKEnOSKLz5O70PNqkznHisipRXI
+RUN ./b2-linux account authorize 005205ae54896c60000000004 K005NrkDRRu7MPegAyxFzI3febLbyPg
 RUN ./b2-linux sync --threads 10 b2://osm-reader src/data
 
 # SSH setup

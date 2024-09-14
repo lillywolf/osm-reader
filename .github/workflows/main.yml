@@ -38,19 +38,8 @@ jobs:
       - name: Save DigitalOcean kubeconfig with short-lived credentials
         run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 k8s-1-30-4-do-0-nyc1-1725976775240
         
-      # - uses: actions-hub/kubectl@master
-      #   env:
-      #     KUBE_CONFIG: ${{ secrets.KUBECONFIG }}
-
-      # - uses: actions-hub/kubectl@master
-      #   with:
-      #     args: get pods
-
-
       - name: Deploy to DigitalOcean Kubernetes
         run: kubectl apply -f $GITHUB_WORKSPACE/deploy.yml
         
-      # - name: Deploy to Kubernetes
-      #   uses: actions-hub/kubectl@master
-      #   with:
-      #     args: apply -f deploy.yaml
+      - name: Verify deployment
+        run: kubectl rollout status deployment/osm-reader-deploy

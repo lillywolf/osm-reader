@@ -5,7 +5,7 @@ on:
     branches: [ main ]
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Code checkout
@@ -25,9 +25,13 @@ jobs:
 
       - name: Push Docker image
         run: docker push  ${{ secrets.DOCKER_USERNAME }}/osm-reader:latest
-
-      - name: Set up kubectl
-        uses: actions-hub/kubectl@master
+        
+  deploy:
+    needs: [ build ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-hub/kubectl@master
         env:
           KUBE_CONFIG: ${{ secrets.KUBECONFIG }}
         with:

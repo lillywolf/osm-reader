@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
         - name: osm-reader
-          image: lillywolf/osm-reader:latest
+          image: <IMAGE>
           ports:
             - containerPort: 3000

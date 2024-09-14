@@ -21,10 +21,10 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build Docker image
-        run: docker build -t  ${{ secrets.DOCKER_USERNAME }}/osm-reader:latest .
+        run: docker build -t  ${{ secrets.DOCKER_USERNAME }}/osm-reader:$(echo $GITHUB_SHA | head -c7) .
 
       - name: Push Docker image
-        run: docker push  ${{ secrets.DOCKER_USERNAME }}/osm-reader:latest
+        run: docker push  ${{ secrets.DOCKER_USERNAME }}/osm-reader:$(echo $GITHUB_SHA | head -c7)
         
   deploy:
     needs: [ build ]
@@ -34,6 +34,9 @@ jobs:
       - uses: digitalocean/action-doctl@v2
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Update deployment file
+        run: TAG=$(echo $GITHUB_SHA | head -c7) && sed -i 's|<IMAGE>|'${{ secrets.DOCKER_USERNAME }}'/osm-reader:'${TAG}'|' $GITHUB_WORKSPACE/config/deployment.yml
         
       - name: Save DigitalOcean kubeconfig with short-lived credentials
         run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 k8s-1-30-4-do-0-nyc1-1725976775240

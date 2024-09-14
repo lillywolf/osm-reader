@@ -130,3 +130,9 @@ dist
 .pnp.*
 
 minikube-darwin-amd64
+
+.DS_Store
+
+dashboard-secret.yaml
+dashboard-role.yaml
+dashboard-admin.yaml

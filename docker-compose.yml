@@ -1,18 +1,38 @@
+version: '3'
 services:
-  read-elements:
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - '3000:3000'
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - loki
+    networks:
+      - monitoring
+
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - '3100:3100'
+    volumes:
+      - loki-data:/data
+    networks:
+      - monitoring
+
+  read-tags:
     build:
-      context: Dockerfile.elements
+      context: Dockerfile
       args:
         - SUPABASE_HOST='aws-0-us-west-1.pooler.supabase.com'
         - SUPABASE_PORT='5432'
         - SUPABASE_USER='postgres.hqyopumdlnawznqrcnho'
         - SUPABASE_PASSWORD='XIJAJP4YJnNcZuWu'
 
-  read-tags:
-    build:
-      context: Dockerfile.tags
-      args:
-        - SUPABASE_HOST='aws-0-us-west-1.pooler.supabase.com'
-        - SUPABASE_PORT='5432'
-        - SUPABASE_USER='postgres.hqyopumdlnawznqrcnho'
-        - SUPABASE_PASSWORD='XIJAJP4YJnNcZuWu'
+networks:
+  monitoring:
+
+volumes:
+  grafana-data:
+  loki-data:
+

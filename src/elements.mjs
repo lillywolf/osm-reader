@@ -1,11 +1,13 @@
+import { createReadStream } from 'fs';
 import path from 'path';
 import XmlStream from 'xml-stream-saxjs';
-import { createReadStream } from 'fs';
+import sax from 'sax';
 import * as db from './db.mjs';
 
 async function osm() {
   const filename = process.argv[2];
   const readableStream = createReadStream(path.join(import.meta.dirname, `./data/${filename}`), { objectMode: true, highWaterMark: 500 });
+  const saxStream = sax.createStream(true);
   const xmlStream = new XmlStream(readableStream);
   const sql = await db.connect();
 
@@ -13,10 +15,10 @@ async function osm() {
 
   xmlStream
     .on('error', (e) => {
-      console.error(`ERROR: elements - sax stream error in file ${filepath}`, e);
+      console.error(`ERROR: elements - sax stream error in file ${filename}`, e);
     })
     .on('endElement: node', (node) => {
-      console.log(`UPSERT NODE: upsert node id ${node.$.id}`, filepath);
+      console.log(`UPSERT NODE: upsert node id ${node.$.id}`, filename);
       db.upsert({
         sql,
         table: 'osm_nodes',
@@ -37,7 +39,7 @@ async function osm() {
       })
     })
     .on('endElement: way', (way) => {
-      console.log(`UPSERT WAY: upsert way id ${way.$.id}`, filepath);
+      console.log(`UPSERT WAY: upsert way id ${way.$.id}`, filename);
       db.upsert({
         sql,
         table: 'osm_ways',
@@ -55,7 +57,7 @@ async function osm() {
       })
     })
     .on('endElement: relation', (relation) => {
-      console.log(`UPSERT RELATION: upsert relation id ${relation.$.id}`, filepath);
+      console.log(`UPSERT RELATION: upsert relation id ${relation.$.id}`, filename);
       db.upsert({
         sql,
         table: 'osm_relations',
@@ -77,7 +79,7 @@ async function osm() {
   readableStream
     .pipe(saxStream)
     .on('data', (chunk) => {
-      console.log('CHUNK: elements', counter.toString(), filepath);
+      console.log('CHUNK: elements', counter.toString(), filename);
       readableStream.pause();
       setTimeout(() => {
         counter++;
@@ -85,10 +87,10 @@ async function osm() {
       }, 10);
     })
     .on('error', (e) => {
-      console.error(`ERROR: elements - stream read error in file ${filepath}`, e);
+      console.error(`ERROR: elements - stream read error in file ${filename}`, e);
     })
     .on('end', () => {
-      console.log(`COMPLETE: elements - stream processing complete for file ${filepath}`);
+      console.log(`COMPLETE: elements - stream processing complete for file ${filename}`);
     });
 }
 

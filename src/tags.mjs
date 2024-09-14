@@ -1,5 +1,6 @@
 import path from 'path';
 import XmlStream from 'xml-stream-saxjs';
+import sax from 'sax';
 import { createReadStream } from 'fs';
 import * as db from './db.mjs';
 
@@ -14,13 +15,13 @@ async function osm() {
 
   xmlStream
     .on('error', (e) => {
-      console.error(`ERROR: tags - sax stream error in file ${filepath}`, e);
+      console.error(`ERROR: tags - sax stream error in file ${filename}`, e);
     })
     .preserve('tag')
     .collect('tag')
     .on('endElement: node', (node) => {
       node.tag?.forEach((tag) => {
-        console.log(`UPSERT TAG: upsert tag id ${tag.$.id} for node id ${node.$.id}`, filepath);
+        console.log(`UPSERT TAG: upsert tag id ${tag.$.id} for node id ${node.$.id}`, filename);
         db.upsert({
           sql,
           table: 'osm_meta_tags',
@@ -45,8 +46,8 @@ async function osm() {
     .collect('tag')
     .on('endElement: way', (way) => {
       // Delete all nd rows associated with this way before writing them
-      console.log(`DELETE ROWS FOR WAY: delete rows where way id = ${way.$.id}`, filepath);
-      db.deleteRows({
+      console.log(`DELETE ROWS FOR WAY: delete rows where way id = ${way.$.id}`, filename);
+      db.remove({
         sql,
         table: 'osm_ways_nodes',
         conditions: {
@@ -54,7 +55,7 @@ async function osm() {
         }
       });
       way.nd?.forEach((nd, i) => {
-        console.log(`UPSERT MEMBER NODE FOR WAY: upsert member node where nd id = ${nd.$.id} and way id = ${way.$.id}`, filepath);
+        console.log(`UPSERT MEMBER NODE FOR WAY: upsert member node where nd id = ${nd.$.ref} and way id = ${way.$.id}`, filename);
         db.insert({
           sql,
           table: 'osm_ways_nodes',
@@ -66,7 +67,7 @@ async function osm() {
         });
       });
       way.tag?.forEach((tag) => {
-        console.log(`UPSERT TAG FOR WAY: upsert tag where tag key = ${tag.$.key} and way id = ${way.$.id}`, filepath);
+        console.log(`UPSERT TAG FOR WAY: upsert tag where tag key = ${tag.$.key} and way id = ${way.$.id}`, filename);
         db.upsert({
           sql,
           table: 'osm_meta_tags',
@@ -90,8 +91,8 @@ async function osm() {
     .preserve('tag')
     .collect('tag')
     .on('endElement: relation', (relation) => {
-      console.log(`UPSERT TAG FOR RELATION: upsert tag where tag key = ${tag.$.key} and relation id = ${relation.$.id}`, filepath);
-      console.log(`DELETE ROWS FOR RELATION: delete rows where relation id = ${relation.$.id}`, filepath);
+      console.log(`UPSERT TAG FOR RELATION: upsert tag where tag key = ${tag.$.key} and relation id = ${relation.$.id}`, filename);
+      console.log(`DELETE ROWS FOR RELATION: delete rows where relation id = ${relation.$.id}`, filename);
       db.deleteRows({
         sql,
         table: 'osm_relations_members',
@@ -100,7 +101,7 @@ async function osm() {
         }
       });
       relation.member?.forEach((member, i) => {
-        console.log(`UPSERT MEMBER FOR WAY: upsert member node where member ref = ${member.$.ref} and relation id = ${relation.$.id}`, filepath);
+        console.log(`UPSERT MEMBER FOR WAY: upsert member node where member ref = ${member.$.ref} and relation id = ${relation.$.id}`, filename);
         db.insert({
           sql,
           table: 'osm_relations_members',
@@ -112,7 +113,7 @@ async function osm() {
         });
       });
       relation.tag?.forEach((tag) => {
-        console.log(`UPSERT TAG FOR RELATION: upsert tag where tag key = ${tag.$.key} and relation id = ${relation.$.id}`, filepath);
+        console.log(`UPSERT TAG FOR RELATION: upsert tag where tag key = ${tag.$.key} and relation id = ${relation.$.id}`, filename);
         db.upsert({
           sql,
           table: 'osm_meta_tags',
@@ -135,7 +136,7 @@ async function osm() {
   readableStream
     .pipe(saxStream)
     .on('data', (chunk) => {
-      console.log('CHUNK: tags', counter.toString(), filepath);
+      console.log('CHUNK: tags', counter.toString(), filename);
       readableStream.pause();
       setTimeout(() => {
         counter++;
@@ -143,10 +144,10 @@ async function osm() {
       }, 10);
     })
     .on('error', (e) => {
-      console.error(`ERROR: tags - stream read error in file ${filepath}`, e);
+      console.error(`ERROR: tags - stream read error in file ${filename}`, e);
     })
     .on('end', () => {
-      console.log(`COMPLETE: tags - stream processing complete for file ${filepath}`);
+      console.log(`COMPLETE: tags - stream processing complete for file ${filename}`);
     });
 }
 

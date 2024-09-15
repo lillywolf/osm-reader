@@ -106,8 +106,6 @@ async function osm(start = 0, end = Infinity) {
   let currentByte = start;
 
   const filename = process.argv[2];
-  const start = start || process.argv[3] || 0;
-  const end = process.argv[4] || end;
 
   const readableStream = createReadStream(
     path.join(import.meta.dirname, `./data/${filename}`),
@@ -151,6 +149,9 @@ async function osm(start = 0, end = Infinity) {
     });
 }
 
-osm();
+const start = process.argv[3];
+const end = process.argv[4];
+
+osm(start, end);
 
 export default osm;

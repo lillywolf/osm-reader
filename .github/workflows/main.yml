@@ -25,7 +25,7 @@ jobs:
         with:
           context: .
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/osm-reader:$(echo $GITHUB_SHA | head -c7)
+            "${{ secrets.DOCKER_USERNAME }}/osm-reader:$(echo $GITHUB_SHA | head -c7)"
           secrets: |
             b2_key_id=${{ secrets.B2_KEY_ID }}
             b2_app_key=${{ secrets.B2_APPLICATION_KEY_ID }}

@@ -18,61 +18,76 @@ async function streamData({
     })
     .on('endElement: node', (node) => {
       console.log(`UPSERT NODE: upsert node id ${node.$.id}`, filename);
-      db.upsert({
-        sql,
-        table: 'osm_nodes',
-        data: {
-          id: node.$.id,
-          timestamp: node.$.timestamp,
-          lat: node.$.lat,
-          lon: node.$.lon,
-        },
-        conflict: [
-          'id',
-        ],
-        updateFields: [
-          'lat',
-          'lon',
-          'timestamp'
-        ],
-      })
+      try {
+        db.upsert({
+          sql,
+          table: 'osm_nodes',
+          data: {
+            id: node.$.id,
+            timestamp: node.$.timestamp,
+            lat: node.$.lat,
+            lon: node.$.lon,
+          },
+          conflict: [
+            'id',
+          ],
+          updateFields: [
+            'lat',
+            'lon',
+            'timestamp'
+          ],
+        })
+      }
+      catch (e) {
+        console.error(`POSTGRES ERROR: insert failed for upsert node ${node.$.id}`);
+      }
     })
     .on('endElement: way', (way) => {
       console.log(`UPSERT WAY: upsert way id ${way.$.id}`, filename);
-      db.upsert({
-        sql,
-        table: 'osm_ways',
-        data: {
-          id: way.$.id,
-          timestamp: way.$.timestamp,
-          version: way.$.version
-        },
-        conflict: [
-          'id',
-        ],
-        updateFields: [
-          'timestamp'
-        ],
-      })
+      try {
+        db.upsert({
+          sql,
+          table: 'osm_ways',
+          data: {
+            id: way.$.id,
+            timestamp: way.$.timestamp,
+            version: way.$.version
+          },
+          conflict: [
+            'id',
+          ],
+          updateFields: [
+            'timestamp'
+          ],
+        })
+      }
+      catch (e) {
+        console.error(`POSTGRES ERROR: insert failed for upsert way ${way.$.id}`);
+      }
     })
     .on('endElement: relation', (relation) => {
       console.log(`UPSERT RELATION: upsert relation id ${relation.$.id}`, filename);
-      db.upsert({
-        sql,
-        table: 'osm_relations',
-        data: {
-          id: relation.$.id,
-          timestamp: relation.$.timestamp,
-          version: relation.$.version
-        },
-        conflict: [
-          'id',
-        ],
-        updateFields: [
-          'version',
-          'timestamp'
-        ],
-    });
+      try {
+        db.upsert({
+          sql,
+          table: 'osm_relations',
+          data: {
+            id: relation.$.id,
+            timestamp: relation.$.timestamp,
+            version: relation.$.version
+          },
+          conflict: [
+            'id',
+          ],
+          updateFields: [
+            'version',
+            'timestamp'
+          ],
+      }); 
+    }
+    catch (e) {
+      console.error(`POSTGRES ERROR: insert failed for upsert relation ${relation.$.id}`);
+    }
   });
 }
 

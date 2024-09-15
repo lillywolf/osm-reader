@@ -4,7 +4,7 @@ export const connect = async () => {
   const { SUPABASE_HOST, SUPABASE_PORT, SUPABASE_USER, SUPABASE_PASSWORD } = process.env;
 
   const connectionString = `postgresql://${SUPABASE_USER}:${SUPABASE_PASSWORD}@${SUPABASE_HOST}:${SUPABASE_PORT}/postgres`;
-  return postgres(connectionString, { prepare: true, connect_timeout: 100 });
+  return postgres(connectionString, { prepare: true });
 };
 
 export const upsert = async ({
@@ -14,14 +14,9 @@ export const upsert = async ({
   conflict,
   updateFields,
 }) => {
-  try {
-    await sql`insert into ${sql(table)} ${sql(data, Object.keys(data))} on conflict (${sql(conflict || [])}) do update set ${
-      sql(data, ...updateFields)
-    }`;
-  }
-  catch (e) {
-    console.error(`POSTGRES ERROR: upsert failed for table ${table} and data ${JSON.stringify(data)}`);
-  }
+  await sql`insert into ${sql(table)} ${sql(data, Object.keys(data))} on conflict (${sql(conflict || [])}) do update set ${
+    sql(data, ...updateFields)
+  }`;
 };
 
 export const insert = async ({
@@ -29,12 +24,7 @@ export const insert = async ({
   table,
   data,
 }) => {
-  try {
-    await sql`insert into ${sql(table)} ${sql(data, Object.keys(data))} on conflict do nothing`;
-  }
-  catch (e) {
-    console.error(`POSTGRES ERROR: insert failed for table ${table} and data ${JSON.stringify(data)}`);
-  }
+  await sql`insert into ${sql(table)} ${sql(data, Object.keys(data))} on conflict do nothing`;
 };
 
 export const remove = async ({
@@ -42,16 +32,11 @@ export const remove = async ({
   table,
   conditions,
 }) => {
-  try {
-    await sql`delete from ${sql(table)} where ${Object.entries(conditions)
-      .map(([k, v], i) => {
-        return i === 0
-          ? sql`${sql(k)} = ${sql(v)}`
-          : sql`and ${sql(k)} = ${sql(v)}`;
-      })
-      .join(' ')}`;
-  }
-  catch (e) {
-    console.error(`POSTGRES ERROR: remove failed for table ${table} and conditions ${JSON.stringify(conditions)}`);
-  }
+  await sql`delete from ${sql(table)} where ${Object.entries(conditions)
+    .map(([k, v], i) => {
+      return i === 0
+        ? sql`${sql(k)} = ${sql(v)}`
+        : sql`and ${sql(k)} = ${sql(v)}`;
+    })
+    .join(' ')}`;
 }

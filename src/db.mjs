@@ -14,9 +14,14 @@ export const upsert = async ({
   conflict,
   updateFields,
 }) => {
-  await sql`insert into ${sql(table)} ${sql(data, Object.keys(data))} on conflict (${sql(conflict || [])}) do update set ${
-    sql(data, ...updateFields)
-  }`;
+  try {
+    await sql`insert into ${sql(table)} ${sql(data, Object.keys(data))} on conflict (${sql(conflict || [])}) do update set ${
+      sql(data, ...updateFields)
+    }`;
+  }
+  catch (e) {
+    console.error(`POSTGRES ERROR: upsert failed for table ${table} and data ${JSON.stringify(data)}`);
+  }
 };
 
 export const insert = async ({
@@ -24,7 +29,12 @@ export const insert = async ({
   table,
   data,
 }) => {
-  await sql`insert into ${sql(table)} ${sql(data, Object.keys(data))} on conflict do nothing`;
+  try {
+    await sql`insert into ${sql(table)} ${sql(data, Object.keys(data))} on conflict do nothing`;
+  }
+  catch (e) {
+    console.error(`POSTGRES ERROR: insert failed for table ${table} and data ${JSON.stringify(data)}`);
+  }
 };
 
 export const remove = async ({
@@ -32,11 +42,16 @@ export const remove = async ({
   table,
   conditions,
 }) => {
-  await sql`delete from ${sql(table)} where ${Object.entries(conditions)
-    .map(([k, v], i) => {
-      return i === 0
-        ? sql`${sql(k)} = ${sql(v)}`
-        : sql`and ${sql(k)} = ${sql(v)}`;
-    })
-    .join(' ')}`;
+  try {
+    await sql`delete from ${sql(table)} where ${Object.entries(conditions)
+      .map(([k, v], i) => {
+        return i === 0
+          ? sql`${sql(k)} = ${sql(v)}`
+          : sql`and ${sql(k)} = ${sql(v)}`;
+      })
+      .join(' ')}`;
+  }
+  catch (e) {
+    console.error(`POSTGRES ERROR: remove failed for table ${table} and conditions ${JSON.stringify(conditions)}`);
+  }
 }

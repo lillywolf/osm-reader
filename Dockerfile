@@ -21,13 +21,15 @@ RUN chmod +x b2-linux
 #   B2_KEY_ID=$(cat /run/secrets/b2_key_id) \
 #   && export B2_KEY_ID
 
-RUN --mount=type=secret,id=b2_key_id,env=B2_KEY_ID
-RUN --mount=type=secret,id=b2_app_key,env=B2_APP_KEY
-RUN echo "the B2_KEY_ID is $B2_KEY_ID"
-RUN echo "the B2_APP_KEY is $B2_APP_KEY"
+RUN --mount=type=secret,id=b2_key_id \
+  B2_KEY_ID=$(cat /run/secrets/b2_key_id) echo "${B2_KEY_ID:?}"
+RUN --mount=type=secret,id=b2_app_key \
+  B2_APP_KEY=$(cat /run/secrets/b2_app_key) echo "${B2_APP_KEY:?}"
+RUN echo "the B2_KEY_ID is ${B2_KEY_ID:?}"
+RUN echo "the B2_APP_KEY is ${B2_APP_KEY:?}"
 
 # Sync with b2 bucket
-RUN ./b2-linux account authorize "$B2_KEY_ID" "$B2_APP_KEY"
+RUN ./b2-linux account authorize 005205ae54896c60000000004 K005NrkDRRu7MPegAyxFzI3febLbyPg
 RUN ./b2-linux sync --threads 10 b2://osm-reader src/data
 
 # SSH setup

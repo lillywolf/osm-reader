@@ -12,9 +12,11 @@ async function streamData({
   currentByte
 }) {
   sql = await db.connect({
-    onclose: async () => {
+    onclose: () => {
       console.log('POSTGRES CONNECTION CLOSED', message);
-      sql = await db.connect();
+      db.connect().then((result) => {
+        sql = result;
+      });
     },
     onnotice: () => {
       console.log('POSTGRES CONNECTION NOTICE', message);

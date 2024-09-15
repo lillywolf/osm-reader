@@ -21,10 +21,8 @@ RUN chmod +x b2-linux
 #   B2_KEY_ID=$(cat /run/secrets/b2_key_id) \
 #   && export B2_KEY_ID
 
-RUN --mount=type=secret,id=b2_key_id \
-  export B2_KEY_ID=$(cat /run/secrets/b2_key_id) 
-RUN --mount=type=secret,id=b2_app_key \
-  export B2_APP_KEY=$(cat /run/secrets/b2_app_key) 
+RUN --mount=type=secret,id=b2_key_id,env=B2_KEY_ID
+RUN --mount=type=secret,id=b2_app_key,env=B2_APP_KEY
 RUN echo "the B2_KEY_ID is $B2_KEY_ID"
 RUN echo "the B2_APP_KEY is $B2_APP_KEY"
 

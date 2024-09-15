@@ -21,10 +21,10 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build Docker image
-        run: docker build -t  ${{ secrets.DOCKER_USERNAME }}/osm-reader:$(echo $GITHUB_SHA | head -c7) .
+        run: docker build --secret id=b2_app_key,src=${{ secrets.B2_APPLICATION_KEY }} --secret id=b2_key_id,src=${{ secrets.B2_KEY_ID }} -t ${{ secrets.DOCKER_USERNAME }}/osm-reader:$(echo $GITHUB_SHA | head -c7) .
 
       - name: Push Docker image
-        run: docker push  ${{ secrets.DOCKER_USERNAME }}/osm-reader:$(echo $GITHUB_SHA | head -c7)
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/osm-reader:$(echo $GITHUB_SHA | head -c7)
         
   deploy:
     needs: [ build ]

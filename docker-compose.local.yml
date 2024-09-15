@@ -1,4 +1,3 @@
-version: '3'
 services:
   grafana:
     image: grafana/grafana:latest
@@ -32,6 +31,8 @@ services:
       SUPABASE_PORT: '5432'
       SUPABASE_USER: 'postgres.hqyopumdlnawznqrcnho'
       SUPABASE_PASSWORD: 'XIJAJP4YJnNcZuWu'
+    ports:
+      - "2222:22"
 
 networks:
   monitoring:

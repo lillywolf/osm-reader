@@ -5,6 +5,7 @@ import sax from 'sax';
 import * as db from './db.mjs';
 
 let sql;
+let counter = 0;
 
 async function connect() {
   sql = await connectWithRefresh();
@@ -34,6 +35,9 @@ async function streamData({
     })
     .on('endElement: node', (node) => {
       // console.log(`UPSERT NODE: upsert node id ${node.$.id}`, filename);
+      if (counter % 500 === 0) {
+        console.log(`CURRENT TAG START POSITION`, xmlStream._parser._parser.startTagPosition);
+      }
       try {
         db.upsert({
           sql,
@@ -60,6 +64,9 @@ async function streamData({
     })
     .on('endElement: way', (way) => {
       // console.log(`UPSERT WAY: upsert way id ${way.$.id}`, filename);
+      if (counter % 500 === 0) {
+        console.log(`CURRENT TAG START POSITION`, xmlStream._parser._parser.startTagPosition);
+      }
       try {
         db.upsert({
           sql,
@@ -83,6 +90,9 @@ async function streamData({
     })
     .on('endElement: relation', (relation) => {
       console.log(`UPSERT RELATION: upsert relation id ${relation.$.id}`, filename);
+      if (counter % 500 === 0) {
+        console.log(`CURRENT TAG START POSITION`, xmlStream._parser._parser.startTagPosition);
+      }
       try {
         db.upsert({
           sql,
@@ -107,11 +117,8 @@ async function streamData({
   });
 }
 
-async function osm(start = 0, end = Infinity) {
-  let counter = 0;
+async function osm(filename, start = 0, end) {
   let currentByte = start;
-
-  const filename = process.argv[2];
 
   await connect();
 
@@ -121,7 +128,7 @@ async function osm(start = 0, end = Infinity) {
       objectMode: true,
       highWaterMark: 500,
       start,
-      end
+      ...(end && {end})
     }
   );
   const saxStream = sax.createStream(true);
@@ -157,9 +164,10 @@ async function osm(start = 0, end = Infinity) {
     });
 }
 
-const start = parseInt(process.argv[3]);
+const filename = process.argv[2];
+const start = parseInt(process.argv[3]) || 0;
 const end = parseInt(process.argv[4]);
 
-osm(start, end);
+osm(filename, start, end);
 
 export default osm;

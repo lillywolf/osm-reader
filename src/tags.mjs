@@ -5,6 +5,7 @@ import { createReadStream } from 'fs';
 import * as db from './db.mjs';
 
 let sql;
+let counter = 0;
 
 async function connect() {
   sql = await connectWithRefresh();
@@ -149,11 +150,8 @@ async function streamData({
   });
 }
 
-async function osm(start = 0, end = Infinity) {
-  let counter = 0;
+async function osm(filename, start = 0, end) {
   let currentByte = start;
-
-  const filename = process.argv[2];
 
   connect();
 
@@ -163,7 +161,7 @@ async function osm(start = 0, end = Infinity) {
       objectMode: true,
       highWaterMark: 500,
       start,
-      end
+      ...(end && {end})
     }
   );
   const saxStream = sax.createStream(true);
@@ -199,9 +197,10 @@ async function osm(start = 0, end = Infinity) {
     });
 }
 
-const start = parseInt(process.argv[3]);
+const filename = process.argv[2];
+const start = parseInt(process.argv[3]) || 0;
 const end = parseInt(process.argv[4]);
 
-osm(start, end);
+osm(filename, start, end);
 
 export default osm;

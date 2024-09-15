@@ -20,14 +20,17 @@ services:
     networks:
       - monitoring
 
-  read-tags:
+  node:
     build:
-      context: Dockerfile
-      args:
-        - SUPABASE_HOST='aws-0-us-west-1.pooler.supabase.com'
-        - SUPABASE_PORT='5432'
-        - SUPABASE_USER='postgres.hqyopumdlnawznqrcnho'
-        - SUPABASE_PASSWORD='XIJAJP4YJnNcZuWu'
+      context: .
+      environment:
+        SUPABASE_HOST: 'aws-0-us-west-1.pooler.supabase.com'
+        SUPABASE_PORT: '5432'
+        SUPABASE_USER: 'postgres.hqyopumdlnawznqrcnho'
+        SUPABASE_PASSWORD: 'XIJAJP4YJnNcZuWu'
+      secrets:
+        - b2_key_id
+        - b2_app_key
 
 networks:
   monitoring:
@@ -35,4 +38,10 @@ networks:
 volumes:
   grafana-data:
   loki-data:
+
+secrets:
+  b2_key_id:
+    environment: B2_KEY_ID
+  b2_app_key:
+    environment: B2_APP_KEY
 

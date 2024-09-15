@@ -141,10 +141,10 @@ async function osm(filename, start = 0, end) {
     .pipe(saxStream)
     .on('data', (chunk) => {
       currentByte += chunk.length;
-      if (counter % 500 === 0) {
-        logger.info('CHUNK: elements', counter.toString(), filename);
-        logger.info('CURRENT BYTE: elements', currentByte, filename);
-        logger.info(`CURRENT TAG START POSITION`, xmlStream._parser._parser.startTagPosition);
+      if (counter % 100 === 0) {
+        logger.info(`CHUNK: position ${counter.toString()} when parsing elements for ${filename}`);
+        logger.info(`CURRENT BYTE: ${currentByte} when parsing elements for ${filename}`);
+        logger.info(`CURRENT TAG START POSITION: ${xmlStream._parser._parser.startTagPosition} when parsing elements for ${filename}`);
       }
       readableStream.pause();
       setTimeout(() => {

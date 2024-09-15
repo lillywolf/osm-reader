@@ -1,4 +1,7 @@
 import postgres from 'postgres';
+import { getLogger } from './logger.mjs';
+
+const logger = getLogger();
 
 export const connect = async ({onclose, onnotice}) => {
   const { SUPABASE_HOST, SUPABASE_PORT, SUPABASE_USER, SUPABASE_PASSWORD } = process.env;
@@ -20,7 +23,7 @@ export const upsert = async ({
     }`;
   }
   catch (e) {
-    console.error(`POSTGRES ERROR: upsert failed for table ${table} and data ${JSON.stringify(data)}`, e);
+    logger.error(`POSTGRES ERROR: upsert failed for table ${table} and data ${JSON.stringify(data)}`, e);
   }
 };
 
@@ -33,7 +36,7 @@ export const insert = async ({
     await sql`insert into ${sql(table)} ${sql(data, Object.keys(data))} on conflict do nothing`;
   }
   catch (e) {
-    console.error(`POSTGRES ERROR: insert failed for table ${table} and data ${JSON.stringify(data)}`, e);
+    logger.error(`POSTGRES ERROR: insert failed for table ${table} and data ${JSON.stringify(data)}`, e);
   }
 };
 
@@ -52,6 +55,6 @@ export const remove = async ({
       .join(' ')}`;
   }
   catch (e) {
-    console.error(`POSTGRES ERROR: remove failed for table ${table} and conditions ${JSON.stringify(conditions)}`, e);
+    logger.error(`POSTGRES ERROR: remove failed for table ${table} and conditions ${JSON.stringify(conditions)}`, e);
   }
 }

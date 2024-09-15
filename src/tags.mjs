@@ -1,4 +1,5 @@
 import path from 'path';
+import { getLogger } from './logger.mjs';
 import XmlStream from 'xml-stream-saxjs';
 import sax from 'sax';
 import { createReadStream } from 'fs';
@@ -6,6 +7,8 @@ import * as db from './db.mjs';
 
 let sql;
 let counter = 0;
+
+const logger = getLogger();
 
 const filename = process.argv[2];
 const start = parseInt(process.argv[3]) || 0;
@@ -18,11 +21,12 @@ async function connect() {
 async function connectWithRefresh() {
   return db.connect({
     onclose: (message) => {
-      console.log('POSTGRES CONNECTION CLOSED', message);
+      logger.error('POSTGRES CONNECTION CLOSED', message);
+      sql.end();
       connect();
     },
     onnotice: (message) => {
-      console.log('POSTGRES CONNECTION NOTICE', message);
+      logger.info('POSTGRES CONNECTION NOTICE', message);
     }
   });
 }
@@ -34,7 +38,7 @@ async function streamData({
 }) {
   xmlStream
     .on('error', (e) => {
-      console.error(`ERROR: tags - sax stream error in file ${filename}`, e);
+      logger.error(`ERROR: tags - sax stream error in file ${filename}`, e);
       osm(currentByte);
     })
     .preserve('tag')
@@ -75,7 +79,7 @@ async function streamData({
         }
       });
       way.nd?.forEach((nd, i) => {
-        console.log(`UPSERT MEMBER NODE FOR WAY: upsert member node where nd id = ${nd.$.ref} and way id = ${way.$.id}`, filename);
+        logger.info(`UPSERT MEMBER NODE FOR WAY: upsert member node where nd id = ${nd.$.ref} and way id = ${way.$.id}`, filename);
         db.insert({
           sql,
           table: 'osm_ways_nodes',
@@ -87,7 +91,7 @@ async function streamData({
         });
       });
       way.tag?.forEach((tag) => {
-        console.log(`UPSERT TAG FOR WAY: upsert tag where tag key = ${tag.$.key} and way id = ${way.$.id}`, filename);
+        logger.info(`UPSERT TAG FOR WAY: upsert tag where tag key = ${tag.$.key} and way id = ${way.$.id}`, filename);
         db.upsert({
           sql,
           table: 'osm_meta_tags',
@@ -111,8 +115,8 @@ async function streamData({
     .preserve('tag')
     .collect('tag')
     .on('endElement: relation', (relation) => {
-      console.log(`UPSERT TAG FOR RELATION: upsert tag where tag key = ${tag.$.key} and relation id = ${relation.$.id}`, filename);
-      console.log(`DELETE ROWS FOR RELATION: delete rows where relation id = ${relation.$.id}`, filename);
+      logger.info(`UPSERT TAG FOR RELATION: upsert tag where tag key = ${tag.$.key} and relation id = ${relation.$.id}`, filename);
+      logger.info(`DELETE ROWS FOR RELATION: delete rows where relation id = ${relation.$.id}`, filename);
       db.deleteRows({
         sql,
         table: 'osm_relations_members',
@@ -121,7 +125,7 @@ async function streamData({
         }
       });
       relation.member?.forEach((member, i) => {
-        console.log(`UPSERT MEMBER FOR WAY: upsert member node where member ref = ${member.$.ref} and relation id = ${relation.$.id}`, filename);
+        logger.info(`UPSERT MEMBER FOR WAY: upsert member node where member ref = ${member.$.ref} and relation id = ${relation.$.id}`, filename);
         db.insert({
           sql,
           table: 'osm_relations_members',
@@ -133,7 +137,7 @@ async function streamData({
         });
       });
       relation.tag?.forEach((tag) => {
-        console.log(`UPSERT TAG FOR RELATION: upsert tag where tag key = ${tag.$.key} and relation id = ${relation.$.id}`, filename);
+        logger.info(`UPSERT TAG FOR RELATION: upsert tag where tag key = ${tag.$.key} and relation id = ${relation.$.id}`, filename);
         db.upsert({
           sql,
           table: 'osm_meta_tags',
@@ -181,10 +185,10 @@ async function osm(filename, start = 0, end) {
     .pipe(saxStream)
     .on('data', (chunk) => {
       currentByte += chunk.length;
-      if (counter % 500 === 0) {
-        console.log('CHUNK: tags', counter.toString(), filename);
-        console.log('CURRENT BYTE: tags', currentByte, filename);
-        console.log(`CURRENT TAG START POSITION`, xmlStream._parser._parser.startTagPosition);
+      if (counter % 100 === 0) {
+        logger.info(`CHUNK: position ${counter.toString()} when parsing elements for ${filename}`);
+        logger.info(`CURRENT BYTE: ${currentByte} when parsing elements for ${filename}`);
+        logger.info(`CURRENT TAG START POSITION: ${xmlStream._parser._parser.startTagPosition} when parsing elements for ${filename}`);
       }
       readableStream.pause();
       setTimeout(() => {
@@ -193,11 +197,11 @@ async function osm(filename, start = 0, end) {
       }, 10);
     })
     .on('error', (e) => {
-      console.error(`ERROR: tags - stream read error in file ${filename} at byte ${currentByte}`, e);
+      logger.error(`ERROR: tags - stream read error in file ${filename} at byte ${currentByte}`, e);
       osm(currentByte);
     })
     .on('end', () => {
-      console.log(`COMPLETE: tags - stream processing complete for file ${filename}`);
+      logger.info(`COMPLETE: tags - stream processing complete for file ${filename}`);
       readableStream.close();
     });
 }

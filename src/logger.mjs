@@ -15,10 +15,11 @@ const initializeLogger = () => {
         labels: { app: 'osm-reader'},
         json: true,
         format: format.json(),
-        replaceTimestamp: true,
+        replaceTimestamp: false,
         onConnectionError: (err) => console.error(err)
       }),
       new transports.Console({
+        forceConsole: true,
         format: format.combine(format.simple(), format.colorize())
       })]
   })

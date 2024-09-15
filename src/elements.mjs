@@ -85,30 +85,37 @@ async function osm(byte) {
   const saxStream = sax.createStream(true);
   const xmlStream = new XmlStream(readableStream);
 
-  streamData({
-    xmlStream,
-    filename,
-    currentByte,
-  });
-
-  readableStream
-    .pipe(saxStream)
-    .on('data', (chunk) => {
-      currentByte += chunk.length;
-      console.log('CHUNK: elements', counter.toString(), filename);
-      readableStream.pause();
-      setTimeout(() => {
-        counter++;
-        readableStream.resume();
-      }, 10);
-    })
-    .on('error', (e) => {
-      console.error(`ERROR: elements - stream read error in file ${filename} at byte ${currentByte}`, e);
-      osm(currentByte);
-    })
-    .on('end', () => {
-      console.log(`COMPLETE: elements - stream processing complete for file ${filename}`);
+  try {
+    streamData({
+      xmlStream,
+      filename,
+      currentByte,
     });
+  
+    readableStream
+      .pipe(saxStream)
+      .on('data', (chunk) => {
+        currentByte += chunk.length;
+        console.log('CHUNK: elements', counter.toString(), filename);
+        readableStream.pause();
+        setTimeout(() => {
+          counter++;
+          readableStream.resume();
+        }, 10);
+      })
+      .on('error', (e) => {
+        console.error(`ERROR: elements - stream read error in file ${filename} at byte ${currentByte}`, e);
+        osm(currentByte);
+      })
+      .on('end', () => {
+        console.log(`COMPLETE: elements - stream processing complete for file ${filename}`);
+        readableStream.close();
+      });
+  } 
+  catch (e) {
+    console.error(`UNHANDLED ERROR: elements - stream read error in file ${filename} at byte ${currentByte}`, e);
+    osm(currentByte);
+  }
 }
 
 osm();

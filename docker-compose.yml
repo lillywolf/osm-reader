@@ -30,6 +30,7 @@ services:
       SUPABASE_PORT: '5432'
       SUPABASE_USER: 'postgres.hqyopumdlnawznqrcnho'
       SUPABASE_PASSWORD: 'XIJAJP4YJnNcZuWu'
+    image: lillywolf/osm-reader:latest
     ports:
       - "2222:22"
 
@@ -42,7 +43,7 @@ volumes:
 
 secrets:
   b2_key_id:
-    environment: B2_KEY_ID
+    file: ./b2/key_id.txt
   b2_app_key:
     environment: B2_APP_KEY
 

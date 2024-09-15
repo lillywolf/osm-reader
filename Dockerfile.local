@@ -1,27 +1,29 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1.2
 FROM node:22
 
 # Node setup
 WORKDIR /src
-COPY package*.json ./
-RUN npm install
-COPY . .
+# COPY package*.json ./
+# RUN npm install
+# COPY . .
+
+ENV FRUIT="pear"
 
 # Install curl
-RUN apt-get update && apt-get install curl
+# RUN apt-get update && apt-get install curl
 
 # Get b2 secrets from docker build args
-RUN echo "the B2_KEY_ID is $b2_key_id"
+RUN --mount=type=secret,id=banana,dst=/app/banana MY_SECRET=$(cat /app/banana) && echo "FRUIT is ${FRUIT} and MY_SECRET is ${MY_SECRET}"
 
 # SSH setup
-RUN apt-get update && apt-get install -y openssh-server
-RUN mkdir /var/run/sshd
-RUN sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+# RUN apt-get update && apt-get install -y openssh-server
+# RUN mkdir /var/run/sshd
+# RUN sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 
-# Add SSH user
-RUN useradd -m -s /bin/bash lilly
-RUN echo 'lilly:banana' | chpasswd
+# # Add SSH user
+# RUN useradd -m -s /bin/bash lilly
+# RUN echo 'lilly:banana' | chpasswd
 
-EXPOSE 22
+# EXPOSE 22
 
-CMD ["/usr/sbin/sshd", "-D"]
+# CMD ["/usr/sbin/sshd", "-D"]

@@ -7,6 +7,10 @@ import * as db from './db.mjs';
 let sql;
 let counter = 0;
 
+const filename = process.argv[2];
+const start = parseInt(process.argv[3]) || 0;
+const end = parseInt(process.argv[4]);
+
 async function connect() {
   sql = await connectWithRefresh();
 }
@@ -180,6 +184,7 @@ async function osm(filename, start = 0, end) {
       if (counter % 500 === 0) {
         console.log('CHUNK: tags', counter.toString(), filename);
         console.log('CURRENT BYTE: tags', currentByte, filename);
+        console.log(`CURRENT TAG START POSITION`, xmlStream._parser._parser.startTagPosition);
       }
       readableStream.pause();
       setTimeout(() => {
@@ -196,10 +201,6 @@ async function osm(filename, start = 0, end) {
       readableStream.close();
     });
 }
-
-const filename = process.argv[2];
-const start = parseInt(process.argv[3]) || 0;
-const end = parseInt(process.argv[4]);
 
 osm(filename, start, end);
 

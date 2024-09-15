@@ -10,7 +10,8 @@ const initializeLogger = () => {
  
   logger = createLogger({
     transports: [new LokiTransport({
-        host: "<YOUR API URL GOES HERE (FROM PREVIOUS STEP)>",
+        basicAuth: `${process.env.GRAFANA_API_USER}:${process.env.GRAFANA_API_PASSWORD}`,
+        host: process.env.GRAFANA_API_HOST,
         labels: { app: 'osm-reader'},
         json: true,
         format: format.json(),

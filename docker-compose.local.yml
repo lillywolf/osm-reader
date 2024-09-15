@@ -24,8 +24,8 @@ services:
       context: .
       dockerfile: Dockerfile.local
       secrets:
-        - b2_key_id
-        - b2_app_key
+        - banana
+        - appkey
     environment:
       SUPABASE_HOST: 'aws-0-us-west-1.pooler.supabase.com'
       SUPABASE_PORT: '5432'
@@ -42,8 +42,8 @@ volumes:
   loki-data:
 
 secrets:
-  b2_key_id:
-    environment: B2_KEY_ID
-  b2_app_key:
+  banana:
+    file: ./b2/key_id.txt
+  appkey:
     environment: B2_APP_KEY
 

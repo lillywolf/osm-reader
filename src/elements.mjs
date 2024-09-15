@@ -1,4 +1,5 @@
 import { createReadStream } from 'fs';
+import { getLogger } from './logger.mjs';
 import path from 'path';
 import XmlStream from 'xml-stream-saxjs';
 import sax from 'sax';
@@ -7,6 +8,12 @@ import * as db from './db.mjs';
 let sql;
 let counter = 0;
 
+const logger = getLogger();
+
+const filename = process.argv[2];
+const start = parseInt(process.argv[3]) || 0;
+const end = parseInt(process.argv[4]);
+
 async function connect() {
   sql = await connectWithRefresh();
 }
@@ -14,11 +21,12 @@ async function connect() {
 async function connectWithRefresh() {
   return db.connect({
     onclose: (message) => {
-      console.log('POSTGRES CONNECTION CLOSED', message);
+      logger.error('POSTGRES CONNECTION CLOSED', message);
+      sql.end();
       connect();
     },
     onnotice: (message) => {
-      console.log('POSTGRES CONNECTION NOTICE', message);
+      logger.warn('POSTGRES CONNECTION NOTICE', message);
     }
   });
 }
@@ -30,14 +38,10 @@ async function streamData({
 }) {
   xmlStream
     .on('error', (e) => {
-      console.error(`ERROR: elements - sax stream error in file ${filename} at byte ${currentByte}`, e);
+      logger.error(`ERROR: elements - sax stream error in file ${filename} at byte ${currentByte}`, e);
       osm(currentByte);
     })
     .on('endElement: node', (node) => {
-      // console.log(`UPSERT NODE: upsert node id ${node.$.id}`, filename);
-      if (counter % 500 === 0) {
-        console.log(`CURRENT TAG START POSITION`, xmlStream._parser._parser.startTagPosition);
-      }
       try {
         db.upsert({
           sql,
@@ -59,14 +63,10 @@ async function streamData({
         })
       }
       catch (e) {
-        console.error(`POSTGRES ERROR: insert failed for upsert node ${node.$.id}`);
+        logger.error(`POSTGRES ERROR: insert failed for upsert node ${node.$.id}`);
       }
     })
     .on('endElement: way', (way) => {
-      // console.log(`UPSERT WAY: upsert way id ${way.$.id}`, filename);
-      if (counter % 500 === 0) {
-        console.log(`CURRENT TAG START POSITION`, xmlStream._parser._parser.startTagPosition);
-      }
       try {
         db.upsert({
           sql,
@@ -85,14 +85,11 @@ async function streamData({
         })
       }
       catch (e) {
-        console.error(`POSTGRES ERROR: insert failed for upsert way ${way.$.id}`);
+        logger.error(`POSTGRES ERROR: insert failed for upsert way ${way.$.id}`);
       }
     })
     .on('endElement: relation', (relation) => {
-      console.log(`UPSERT RELATION: upsert relation id ${relation.$.id}`, filename);
-      if (counter % 500 === 0) {
-        console.log(`CURRENT TAG START POSITION`, xmlStream._parser._parser.startTagPosition);
-      }
+      logger.info(`UPSERT RELATION: upsert relation id ${relation.$.id}`, filename);
       try {
         db.upsert({
           sql,
@@ -112,7 +109,7 @@ async function streamData({
       }); 
     }
     catch (e) {
-      console.error(`POSTGRES ERROR: insert failed for upsert relation ${relation.$.id}`);
+      logger.error(`POSTGRES ERROR: insert failed for upsert relation ${relation.$.id}`);
     }
   });
 }
@@ -145,8 +142,9 @@ async function osm(filename, start = 0, end) {
     .on('data', (chunk) => {
       currentByte += chunk.length;
       if (counter % 500 === 0) {
-        console.log('CHUNK: elements', counter.toString(), filename);
-        console.log('CURRENT BYTE: elements', currentByte, filename);
+        logger.info('CHUNK: elements', counter.toString(), filename);
+        logger.info('CURRENT BYTE: elements', currentByte, filename);
+        logger.info(`CURRENT TAG START POSITION`, xmlStream._parser._parser.startTagPosition);
       }
       readableStream.pause();
       setTimeout(() => {
@@ -155,18 +153,16 @@ async function osm(filename, start = 0, end) {
       }, 10);
     })
     .on('error', (e) => {
-      console.error(`ERROR: elements - stream read error in file ${filename} at byte ${currentByte}`, e);
+      logger.error(`ERROR: elements - stream read error in file ${filename} at byte ${currentByte}`, e);
       osm(currentByte);
     })
     .on('end', () => {
-      console.log(`COMPLETE: elements - stream processing complete for file ${filename}`);
+      logger.info(`COMPLETE: elements - stream processing complete for file ${filename}`);
       readableStream.close();
     });
 }
 
-const filename = process.argv[2];
-const start = parseInt(process.argv[3]) || 0;
-const end = parseInt(process.argv[4]);
+logger.info('Starting OSM reader ...');
 
 osm(filename, start, end);
 

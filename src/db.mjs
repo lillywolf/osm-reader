@@ -4,7 +4,7 @@ export const connect = async ({onclose, onnotice}) => {
   const { SUPABASE_HOST, SUPABASE_PORT, SUPABASE_USER, SUPABASE_PASSWORD } = process.env;
 
   const connectionString = `postgresql://${SUPABASE_USER}:${SUPABASE_PASSWORD}@${SUPABASE_HOST}:${SUPABASE_PORT}/postgres`;
-  return postgres(connectionString, { prepare: true, onclose, onnotice });
+  return postgres(connectionString, { prepare: true, onclose, onnotice, max_lifetime: 86400 });
 };
 
 export const upsert = async ({

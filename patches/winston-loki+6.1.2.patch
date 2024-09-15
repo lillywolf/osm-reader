@@ -1,0 +1,13 @@
+diff --git a/node_modules/winston-loki/src/requests.js b/node_modules/winston-loki/src/requests.js
+index 6ada7bc..84f064f 100644
+--- a/node_modules/winston-loki/src/requests.js
++++ b/node_modules/winston-loki/src/requests.js
+@@ -28,7 +28,7 @@ const post = async (lokiUrl, contentType, headers = {}, data = '', timeout, http
+     }
+ 
+     // Construct the request
+-    const req = lib.request(options, res => {
++    const req = lib.request('https://logs-prod-006.grafana.net', options, res => {
+       let resData = ''
+       res.on('data', _data => (resData += _data))
+       res.on('end', () => resolve(resData))

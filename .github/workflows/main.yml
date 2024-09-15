@@ -21,7 +21,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build Docker image
-        run: docker build --secret id=b2_key_id,src=b2/keyId.txt,env=B2_KEY_ID --secret id=b2_app_key,src=b2/appKey.txt,env=B2_APP_KEY -t ${{ secrets.DOCKER_USERNAME }}/osm-reader:$(echo $GITHUB_SHA | head -c7) .
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/osm-reader:$(echo $GITHUB_SHA | head -c7) .
 
       - name: Push Docker image
         run: docker push ${{ secrets.DOCKER_USERNAME }}/osm-reader:$(echo $GITHUB_SHA | head -c7)

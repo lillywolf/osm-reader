@@ -4,21 +4,29 @@ import sax from 'sax';
 import { createReadStream } from 'fs';
 import * as db from './db.mjs';
 
+let sql;
+
+async function connect() {
+  sql = await connectWithRefresh();
+}
+
+async function connectWithRefresh() {
+  return db.connect({
+    onclose: (message) => {
+      console.log('POSTGRES CONNECTION CLOSED', message);
+      connect();
+    },
+    onnotice: (message) => {
+      console.log('POSTGRES CONNECTION NOTICE', message);
+    }
+  });
+}
+
 async function streamData({
   xmlStream,
   filename,
   currentByte
 }) {
-  sql = await db.connect({
-    onclose: async () => {
-      console.log('POSTGRES CONNECTION CLOSED', message);
-      sql = await db.connect();
-    },
-    onnotice: () => {
-      console.log('POSTGRES CONNECTION NOTICE', message);
-    }
-  });
-
   xmlStream
     .on('error', (e) => {
       console.error(`ERROR: tags - sax stream error in file ${filename}`, e);
@@ -146,6 +154,8 @@ async function osm(start = 0, end = Infinity) {
   let currentByte = start;
 
   const filename = process.argv[2];
+
+  connect();
 
   const readableStream = createReadStream(
     path.join(import.meta.dirname, `./data/${filename}`),

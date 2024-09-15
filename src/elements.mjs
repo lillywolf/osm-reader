@@ -17,7 +17,7 @@ async function streamData({
       osm(currentByte);
     })
     .on('endElement: node', (node) => {
-      console.log(`UPSERT NODE: upsert node id ${node.$.id}`, filename);
+      // console.log(`UPSERT NODE: upsert node id ${node.$.id}`, filename);
       try {
         db.upsert({
           sql,
@@ -43,7 +43,7 @@ async function streamData({
       }
     })
     .on('endElement: way', (way) => {
-      console.log(`UPSERT WAY: upsert way id ${way.$.id}`, filename);
+      // console.log(`UPSERT WAY: upsert way id ${way.$.id}`, filename);
       try {
         db.upsert({
           sql,
@@ -110,7 +110,9 @@ async function osm(byte) {
     .pipe(saxStream)
     .on('data', (chunk) => {
       currentByte += chunk.length;
-      console.log('CHUNK: elements', counter.toString(), filename);
+      if (counter % 10000 === 0) {
+        console.log('CHUNK: elements', counter.toString(), filename), currentByte;
+      }
       readableStream.pause();
       setTimeout(() => {
         counter++;

@@ -1,0 +1,48 @@
+version: '3'
+services:
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - '3000:3000'
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - loki
+    networks:
+      - monitoring
+
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - '3100:3100'
+    volumes:
+      - loki-data:/data
+    networks:
+      - monitoring
+
+  node:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+      secrets:
+        - b2_key_id
+        - b2_app_key
+    environment:
+      SUPABASE_HOST: 'aws-0-us-west-1.pooler.supabase.com'
+      SUPABASE_PORT: '5432'
+      SUPABASE_USER: 'postgres.hqyopumdlnawznqrcnho'
+      SUPABASE_PASSWORD: 'XIJAJP4YJnNcZuWu'
+
+networks:
+  monitoring:
+
+volumes:
+  grafana-data:
+  loki-data:
+
+secrets:
+  b2_key_id:
+    environment: B2_KEY_ID
+  b2_app_key:
+    environment: B2_APP_KEY
+

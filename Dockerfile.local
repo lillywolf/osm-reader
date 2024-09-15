@@ -8,23 +8,19 @@ RUN npm install
 COPY . .
 
 # Install curl
-# RUN apt-get update && apt-get install curl
-
-ENV FRUIT="orange"
+RUN apt-get update && apt-get install curl
 
 # Get b2 secrets from docker build args
-RUN --mount=type=secret,id=B2_KEY_ID,env=B2_KEY_ID
-RUN echo "the B2_KEY_ID is ${B2_KEY_ID}"
-RUN echo "the FRUIT is $FRUIT"
+RUN echo "the B2_KEY_ID is $b2_key_id"
 
 # SSH setup
-# RUN apt-get update && apt-get install -y openssh-server
-# RUN mkdir /var/run/sshd
-# RUN sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+RUN apt-get update && apt-get install -y openssh-server
+RUN mkdir /var/run/sshd
+RUN sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 
-# # Add SSH user
-# RUN useradd -m -s /bin/bash lilly
-# RUN echo 'lilly:banana' | chpasswd
+# Add SSH user
+RUN useradd -m -s /bin/bash lilly
+RUN echo 'lilly:banana' | chpasswd
 
 EXPOSE 22
 

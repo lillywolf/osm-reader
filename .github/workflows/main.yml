@@ -23,12 +23,10 @@ jobs:
       - name: Build Docker image
         uses: docker/build-push-action@v4
         with:
-          context: .
-          tags: |
-            "${{ secrets.DOCKER_USERNAME }}/osm-reader:$(echo $GITHUB_SHA | head -c7)"
+          run: docker build -t ${{ secrets.DOCKER_USERNAME }}/osm-reader:$(echo $GITHUB_SHA | head -c7) .
           secrets: |
-            b2_key_id=${{ secrets.B2_KEY_ID }}
-            b2_app_key=${{ secrets.B2_APPLICATION_KEY_ID }}
+            "b2_key_id=${{ secrets.B2_KEY_ID }}"
+            "b2_app_key=${{ secrets.B2_APPLICATION_KEY_ID }}"
 
       - name: Push Docker image
         run: docker push ${{ secrets.DOCKER_USERNAME }}/osm-reader:$(echo $GITHUB_SHA | head -c7)

@@ -113,7 +113,7 @@ async function osm(start = 0, end = Infinity) {
 
   const filename = process.argv[2];
 
-  connect();
+  await connect();
 
   const readableStream = createReadStream(
     path.join(import.meta.dirname, `./data/${filename}`),

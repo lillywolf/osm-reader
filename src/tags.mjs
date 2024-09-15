@@ -199,8 +199,8 @@ async function osm(start = 0, end = Infinity) {
     });
 }
 
-const start = process.argv[3];
-const end = process.argv[4];
+const start = parseInt(process.argv[3]);
+const end = parseInt(rocess.argv[4]);
 
 osm(start, end);
 

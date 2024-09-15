@@ -13,11 +13,9 @@ COPY . .
 ENV FRUIT="orange"
 
 # Get b2 secrets from docker build args
-RUN --mount=type=secret,id=B2_KEY_ID,dst=/run/secrets/env-secrets \
-  sh -c 'echo "Environment Variables:" >> /build-env.log && env >> /build-env.log'
-RUN echo "the B2_KEY_ID is $B2_KEY_ID"
+RUN --mount=type=secret,id=B2_KEY_ID,env=B2_KEY_ID
+RUN echo "the B2_KEY_ID is ${B2_KEY_ID}"
 RUN echo "the FRUIT is $FRUIT"
-COPY /build-env.log .
 
 # SSH setup
 # RUN apt-get update && apt-get install -y openssh-server
@@ -27,7 +25,6 @@ COPY /build-env.log .
 # # Add SSH user
 # RUN useradd -m -s /bin/bash lilly
 # RUN echo 'lilly:banana' | chpasswd
-
 
 EXPOSE 22
 

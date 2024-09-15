@@ -1,19 +1,10 @@
 import postgres from 'postgres';
 
-export const connect = async () => {
+export const connect = async ({onclose, onnotice}) => {
   const { SUPABASE_HOST, SUPABASE_PORT, SUPABASE_USER, SUPABASE_PASSWORD } = process.env;
 
   const connectionString = `postgresql://${SUPABASE_USER}:${SUPABASE_PASSWORD}@${SUPABASE_HOST}:${SUPABASE_PORT}/postgres`;
-  return postgres(connectionString, {
-    prepare: true,
-    onclose: (m) => {
-      console.log('POSTGRES CONNECTION CLOSED', m);
-      connect();
-    },
-    onnotice: (m) => {
-      console.log('POSTGRES CONNECTION NOTICE', m);
-    }
-  });
+  return postgres(connectionString, { prepare: true, onclose, onnotice });
 };
 
 export const upsert = async ({

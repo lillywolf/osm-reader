@@ -5,6 +5,8 @@ cd "$(dirname "$0")"
 
 stage="$1"
 filename="$2"
+start="$3"
+end="$4"
 echo $stage
 
 if [ ! $stage ]; then
@@ -24,9 +26,9 @@ if [ ! $filename ]; then
 fi
 
 if [ "$stage" = "elements" ]; then
-  node --env-file=.env.production ./elements.mjs $filename
+  node --env-file=.env.production ./elements.mjs $filename $start $end
 elif [ "$stage" = "tags" ]; then
-  node --env-file=.env.production ./tags.mjs $filename
+  node --env-file=.env.production ./tags.mjs $filename $start $end
 else
   echo "Invalid stage passed to osm.sh; must be either 'elements' or 'tags'";
   echo "Usage: $0 --stage stage --filename filename"

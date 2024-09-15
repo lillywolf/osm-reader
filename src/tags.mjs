@@ -4,18 +4,25 @@ import sax from 'sax';
 import { createReadStream } from 'fs';
 import * as db from './db.mjs';
 
-async function osm() {
-  const filename = process.argv[2];
-  const readableStream = createReadStream(path.join(import.meta.dirname, `./data/${filename}`), { objectMode: true, highWaterMark: 500 });
-  const saxStream = sax.createStream(true);
-  const xmlStream = new XmlStream(readableStream);
-  const sql = await db.connect();
-
-  let counter = 0;
+async function streamData({
+  xmlStream,
+  filename,
+  currentByte
+}) {
+  sql = await db.connect({
+    onclose: async () => {
+      console.log('POSTGRES CONNECTION CLOSED', message);
+      sql = await db.connect();
+    },
+    onnotice: () => {
+      console.log('POSTGRES CONNECTION NOTICE', message);
+    }
+  });
 
   xmlStream
     .on('error', (e) => {
       console.error(`ERROR: tags - sax stream error in file ${filename}`, e);
+      osm(currentByte);
     })
     .preserve('tag')
     .collect('tag')
@@ -46,7 +53,7 @@ async function osm() {
     .collect('tag')
     .on('endElement: way', (way) => {
       // Delete all nd rows associated with this way before writing them
-      console.log(`DELETE ROWS FOR WAY: delete rows where way id = ${way.$.id}`, filename);
+      // console.log(`DELETE ROWS FOR WAY: delete rows where way id = ${way.$.id}`, filename);
       db.remove({
         sql,
         table: 'osm_ways_nodes',
@@ -132,11 +139,42 @@ async function osm() {
         });
       });
   });
+}
+
+async function osm(start = 0, end = Infinity) {
+  let counter = 0;
+  let currentByte = start;
+
+  const filename = process.argv[2];
+  const start = start || process.argv[3] || 0;
+  const end = process.argv[4] || end;
+
+  const readableStream = createReadStream(
+    path.join(import.meta.dirname, `./data/${filename}`),
+    {
+      objectMode: true,
+      highWaterMark: 500,
+      start,
+      end
+    }
+  );
+  const saxStream = sax.createStream(true);
+  const xmlStream = new XmlStream(readableStream);
+
+  streamData({
+    xmlStream,
+    filename,
+    currentByte,
+  });
 
   readableStream
     .pipe(saxStream)
     .on('data', (chunk) => {
-      console.log('CHUNK: tags', counter.toString(), filename);
+      currentByte += chunk.length;
+      if (counter % 500 === 0) {
+        console.log('CHUNK: tags', counter.toString(), filename);
+        console.log('CURRENT BYTE: tags', currentByte, filename);
+      }
       readableStream.pause();
       setTimeout(() => {
         counter++;
@@ -144,10 +182,12 @@ async function osm() {
       }, 10);
     })
     .on('error', (e) => {
-      console.error(`ERROR: tags - stream read error in file ${filename}`, e);
+      console.error(`ERROR: tags - stream read error in file ${filename} at byte ${currentByte}`, e);
+      osm(currentByte);
     })
     .on('end', () => {
       console.log(`COMPLETE: tags - stream processing complete for file ${filename}`);
+      readableStream.close();
     });
 }
 

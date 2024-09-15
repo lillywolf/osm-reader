@@ -4,12 +4,22 @@ import XmlStream from 'xml-stream-saxjs';
 import sax from 'sax';
 import * as db from './db.mjs';
 
+let sql;
+
 async function streamData({
   xmlStream,
   filename,
   currentByte
 }) {
-  const sql = await db.connect();
+  sql = await db.connect({
+    onclose: async () => {
+      console.log('POSTGRES CONNECTION CLOSED', message);
+      sql = await db.connect();
+    },
+    onnotice: () => {
+      console.log('POSTGRES CONNECTION NOTICE', message);
+    }
+  });
 
   xmlStream
     .on('error', (e) => {
@@ -91,12 +101,23 @@ async function streamData({
   });
 }
 
-async function osm(byte) {
+async function osm(start = 0, end = Infinity) {
   let counter = 0;
-  let currentByte = byte || 0;
+  let currentByte = start;
 
   const filename = process.argv[2];
-  const readableStream = createReadStream(path.join(import.meta.dirname, `./data/${filename}`), { objectMode: true, highWaterMark: 500, start: currentByte });
+  const start = start || process.argv[3] || 0;
+  const end = process.argv[4] || end;
+
+  const readableStream = createReadStream(
+    path.join(import.meta.dirname, `./data/${filename}`),
+    {
+      objectMode: true,
+      highWaterMark: 500,
+      start,
+      end
+    }
+  );
   const saxStream = sax.createStream(true);
   const xmlStream = new XmlStream(readableStream);
 
@@ -110,8 +131,9 @@ async function osm(byte) {
     .pipe(saxStream)
     .on('data', (chunk) => {
       currentByte += chunk.length;
-      if (counter % 10000 === 0) {
-        console.log('CHUNK: elements', counter.toString(), filename), currentByte;
+      if (counter % 500 === 0) {
+        console.log('CHUNK: elements', counter.toString(), filename);
+        console.log('CURRENT BYTE: elements', currentByte, filename);
       }
       readableStream.pause();
       setTimeout(() => {

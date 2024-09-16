@@ -42,6 +42,7 @@ async function streamData({
       xmlStream._parser._parser.error = null;
     })
     .on('endElement: node', (node) => {
+      logger.info(`UPSERT NODE: upsert node id ${node.$.id}`, filename);
       try {
         db.upsert({
           sql,
@@ -143,7 +144,7 @@ async function osm(filename, start = 0, end) {
       // This is a hack
       // xml-stream-saxjs doesn't make it clear how to set the strict property
       // on the underlying sax class. So we are doing it this way
-      xmlStream._parser._parser.strict = false;
+      // xmlStream._parser._parser.strict = false;
 
       currentByte += chunk.length;
       if (counter % 10 === 0) {

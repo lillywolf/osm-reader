@@ -136,3 +136,5 @@ minikube-darwin-amd64
 dashboard-secret.yaml
 dashboard-role.yaml
 dashboard-admin.yaml
+
+src/data

@@ -39,7 +39,7 @@ async function streamData({
   xmlStream
     .on('error', (e) => {
       logger.error(`ERROR: elements - sax stream error in file ${filename} at byte ${currentByte}`, e);
-      osm(currentByte);
+      xmlStream._parser._parser.error = null;
     })
     .on('endElement: node', (node) => {
       try {
@@ -123,14 +123,14 @@ async function osm(filename, start = 0, end) {
     path.join(import.meta.dirname, `./data/${filename}`),
     {
       objectMode: true,
-      highWaterMark: 500,
+      highWaterMark: 1000,
       start,
       ...(end && {end})
     }
   );
-  const saxStream = sax.createStream(true);
+  const saxStream = sax.createStream(false);
   const xmlStream = new XmlStream(readableStream);
-
+  
   streamData({
     xmlStream,
     filename,
@@ -140,10 +140,16 @@ async function osm(filename, start = 0, end) {
   readableStream
     .pipe(saxStream)
     .on('data', (chunk) => {
+      // This is a hack
+      // xml-stream-saxjs doesn't make it clear how to set the strict property
+      // on the underlying sax class. So we are doing it this way
+      xmlStream._parser._parser.strict = false;
+
       currentByte += chunk.length;
-      if (counter % 100 === 0) {
+      if (counter % 10 === 0) {
         logger.info(`CHUNK: position ${counter.toString()} when parsing elements for ${filename}`);
         logger.info(`CURRENT BYTE: ${currentByte} when parsing elements for ${filename}`);
+        logger.info(`CURRENT TAG: ${JSON.stringify(xmlStream._parser._parser.tag)} when parsing elements for ${filename}`);
         logger.info(`CURRENT TAG START POSITION: ${xmlStream._parser._parser.startTagPosition} when parsing elements for ${filename}`);
       }
       readableStream.pause();

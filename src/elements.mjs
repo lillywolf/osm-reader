@@ -20,9 +20,9 @@ async function connect() {
 
 async function connectWithRefresh() {
   return db.connect({
-    onclose: (message) => {
-      logger.error('POSTGRES CONNECTION CLOSED', message);
-      sql.end();
+    onclose: (connectionId) => {
+      logger.error('POSTGRES CONNECTION CLOSED', connectionId);
+      logger.info('ATTEMPTING RECONNECTION');
       connect();
     },
     onnotice: (message) => {
@@ -45,7 +45,7 @@ async function streamData({
       try {
         db.upsert({
           sql,
-          table: 'osm_nodes',
+          table: 'osm_nodes_test',
           data: {
             id: node.$.id,
             timestamp: node.$.timestamp,
@@ -150,7 +150,7 @@ async function osm(filename, start = 0, end) {
       setTimeout(() => {
         counter++;
         readableStream.resume();
-      }, 10);
+      }, 20);
     })
     .on('error', (e) => {
       logger.error(`ERROR: elements - stream read error in file ${filename} at byte ${currentByte}`, e);

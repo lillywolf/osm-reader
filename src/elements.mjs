@@ -46,7 +46,7 @@ async function streamData({
       try {
         db.upsert({
           sql,
-          table: 'osm_nodes_test',
+          table: 'osm_nodes',
           data: {
             id: node.$.id,
             timestamp: node.$.timestamp,

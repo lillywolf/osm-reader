@@ -18,7 +18,7 @@ RUN chmod +x b2-linux
 
 # Sync with b2 bucket
 RUN ./b2-linux account authorize 005205ae54896c60000000004 K005NrkDRRu7MPegAyxFzI3febLbyPg
-RUN ./b2-linux sync --threads 10 b2://osm-reader src/data
+RUN ./b2-linux sync --threads 20 b2://osm-reader src/data
 
 # SSH setup
 RUN apt-get update && apt-get install -y openssh-server

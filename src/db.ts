@@ -1,7 +1,5 @@
 import postgres from 'postgres';
-import { getLogger } from './logger.mjs';
-
-const logger = getLogger();
+import Logger from './logger';
 
 export const connect = async ({onclose, onnotice}) => {
   const { SUPABASE_HOST, SUPABASE_PORT, SUPABASE_USER, SUPABASE_PASSWORD } = process.env;
@@ -17,6 +15,8 @@ export const upsert = async ({
   conflict,
   updateFields,
 }) => {
+  const logger = Logger.getInstance();
+
   try {
     await sql`insert into ${sql(table)} ${sql(data, Object.keys(data))} on conflict (${sql(conflict || [])}) do update set ${
       sql(data, ...updateFields)
@@ -32,6 +32,8 @@ export const insert = async ({
   table,
   data,
 }) => {
+  const logger = Logger.getInstance();
+
   try {
     await sql`insert into ${sql(table)} ${sql(data, Object.keys(data))} on conflict do nothing`;
   }
@@ -45,6 +47,8 @@ export const remove = async ({
   table,
   conditions,
 }) => {
+  const logger = Logger.getInstance();
+
   try {
     await sql`delete from ${sql(table)} where ${Object.entries(conditions)
       .map(([k, v], i) => {

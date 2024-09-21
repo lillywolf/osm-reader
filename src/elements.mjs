@@ -1,9 +1,9 @@
-import { createReadStream } from 'fs';
-import { getLogger } from './logger.mjs';
+import fs from 'fs';
+import { getLogger } from './logger.js';
 import path from 'path';
 import XmlStream from 'xml-stream-saxjs';
 import sax from 'sax';
-import * as db from './db.mjs';
+import * as db from './db.js';
 
 let sql;
 let counter = 0;
@@ -13,6 +13,10 @@ const logger = getLogger();
 const filename = process.argv[2];
 const start = parseInt(process.argv[3]) || 0;
 const end = parseInt(process.argv[4]);
+
+function isNumber(value) {
+  return typeof value === 'number' && !isNaN(value);
+}
 
 async function connect() {
   sql = await connectWithRefresh();
@@ -31,22 +35,65 @@ async function connectWithRefresh() {
   });
 }
 
-async function streamData({
+function readXmlStream({ start, end, filename }) {
+  let currentByte = start;
+
+  const readableStream = fs.createReadStream(
+    path.join(import.meta.dirname, `./data/${filename}`),
+    {
+      objectMode: true,
+      highWaterMark: 1000,
+      start,
+      ...(end && {end})
+    }
+  );
+
+  const saxStream = sax.createStream(true);
+  const xmlStream = new XmlStream(readableStream);
+
+  saveXml({ xmlStream, filename });
+
+  readableStream
+    .pipe(saxStream)
+    .on('data', (chunk) => {
+      currentByte += chunk.length;
+      if (counter % 10 === 0) {
+        logger.info(`CHUNK: position ${counter.toString()} when parsing elements for ${filename}`);
+        logger.info(`CURRENT BYTE: ${currentByte} when parsing elements for ${filename}`);
+        logger.info(`CURRENT TAG: ${JSON.stringify(xmlStream._parser._parser.tag)} when parsing elements for ${filename}`);
+        logger.info(`CURRENT TAG START POSITION: ${xmlStream._parser._parser.startTagPosition} when parsing elements for ${filename}`);
+      }
+      readableStream.pause();
+      setTimeout(() => {
+        counter++;
+        readableStream.resume();
+      }, 20);
+    })
+    .on('error', (e) => {
+      logger.error(`ERROR: elements - stream read error in file ${filename} at byte ${currentByte}`, e);
+    })
+    .on('end', () => {
+      logger.info(`COMPLETE: elements - stream processing complete for file ${filename}`);
+      readableStream.close();
+    });
+}
+
+async function saveXml({
   xmlStream,
   filename,
-  currentByte
 }) {
+  await connect();
+
   xmlStream
     .on('error', (e) => {
-      logger.error(`ERROR: elements - sax stream error in file ${filename} at byte ${currentByte}`, e);
-      xmlStream._parser._parser.error = null;
+      logger.error(`ERROR: elements - sax stream error in file ${filename}`, e);
     })
     .on('endElement: node', (node) => {
       logger.info(`UPSERT NODE: upsert node id ${node.$.id}`, filename);
       try {
         db.upsert({
           sql,
-          table: 'osm_nodes',
+          table: 'osm_nodes_test',
           data: {
             id: node.$.id,
             timestamp: node.$.timestamp,
@@ -68,10 +115,11 @@ async function streamData({
       }
     })
     .on('endElement: way', (way) => {
+      logger.info(`UPSERT WAY: upsert way id ${way.$.id}`, filename);
       try {
         db.upsert({
           sql,
-          table: 'osm_ways',
+          table: 'osm_ways_test',
           data: {
             id: way.$.id,
             timestamp: way.$.timestamp,
@@ -115,58 +163,36 @@ async function streamData({
   });
 }
 
-async function osm(filename, start = 0, end) {
-  let currentByte = start;
+async function osm(filename, start, end) {
+  let startByte;
 
-  await connect();
-
-  const readableStream = createReadStream(
-    path.join(import.meta.dirname, `./data/${filename}`),
+  const filepath = path.join(import.meta.dirname, `./data/${filename}`);
+  const validationStream = fs.createReadStream(
+    filepath,
     {
       objectMode: true,
       highWaterMark: 1000,
       start,
-      ...(end && {end})
     }
   );
-  const saxStream = sax.createStream(false);
-  const xmlStream = new XmlStream(readableStream);
-  
-  streamData({
-    xmlStream,
-    filename,
-    currentByte,
-  });
 
-  readableStream
-    .pipe(saxStream)
+  validationStream
     .on('data', (chunk) => {
-      // This is a hack
-      // xml-stream-saxjs doesn't make it clear how to set the strict property
-      // on the underlying sax class. So we are doing it this way
-      // xmlStream._parser._parser.strict = false;
+      const regex = /(<[^/]*>)/;
+      const openingTag = regex.exec(chunk);
+      startByte = openingTag.index;
 
-      currentByte += chunk.length;
-      if (counter % 10 === 0) {
-        logger.info(`CHUNK: position ${counter.toString()} when parsing elements for ${filename}`);
-        logger.info(`CURRENT BYTE: ${currentByte} when parsing elements for ${filename}`);
-        logger.info(`CURRENT TAG: ${JSON.stringify(xmlStream._parser._parser.tag)} when parsing elements for ${filename}`);
-        logger.info(`CURRENT TAG START POSITION: ${xmlStream._parser._parser.startTagPosition} when parsing elements for ${filename}`);
+      if (isNumber(startByte)) {
+        logger.info(`START BYTE ${startByte}`);
+
+        const modifiedData = chunk.toString('utf-8').replace(openingTag[0], `<osm version="0.6" generator="osmium/1.14.0">\n  ${openingTag[0]}`);
+      
+        readXmlStream({ start: startByte, end, filename });
+        validationStream.destroy();
       }
-      readableStream.pause();
-      setTimeout(() => {
-        counter++;
-        readableStream.resume();
-      }, 20);
     })
-    .on('error', (e) => {
-      logger.error(`ERROR: elements - stream read error in file ${filename} at byte ${currentByte}`, e);
-      osm(currentByte);
-    })
-    .on('end', () => {
-      logger.info(`COMPLETE: elements - stream processing complete for file ${filename}`);
-      readableStream.close();
-    });
+    .pipe(new TransformStream())
+    .pipe(fs.createWriteStream('output/file'));
 }
 
 logger.info('Starting OSM reader ...');

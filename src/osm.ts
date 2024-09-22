@@ -2,13 +2,12 @@ import * as dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import * as db from './db';
-import OSMXmlParser from './xml/parse';
+import OSMXmlParser, { TagData } from './xml/parse';
 import Logger from './logger';
 
 dotenv.config();
 
 let sql;
-let counter = 0;
 
 const filename = process.argv[2];
 const start = parseInt(process.argv[3]) || 0;
@@ -33,91 +32,6 @@ async function connectWithRefresh() {
   });
 }
 
-// async function saveXml({
-//   xmlStream,
-//   filename,
-// }) {
-//   await connect();
-
-//   xmlStream
-//     .on('error', (e) => {
-//       logger.error(`ERROR: elements - sax stream error in file ${filename}`, e);
-//     })
-//     .on('endElement: node', (node) => {
-//       logger.info(`UPSERT NODE: upsert node id ${node.$.id}`, filename);
-//       try {
-//         db.upsert({
-//           sql,
-//           table: 'osm_nodes_test',
-//           data: {
-//             id: node.$.id,
-//             timestamp: node.$.timestamp,
-//             lat: node.$.lat,
-//             lon: node.$.lon,
-//           },
-//           conflict: [
-//             'id',
-//           ],
-//           updateFields: [
-//             'lat',
-//             'lon',
-//             'timestamp'
-//           ],
-//         })
-//       }
-//       catch (e) {
-//         logger.error(`POSTGRES ERROR: insert failed for upsert node ${node.$.id}`);
-//       }
-//     })
-//     .on('endElement: way', (way) => {
-//       logger.info(`UPSERT WAY: upsert way id ${way.$.id}`, filename);
-//       try {
-//         db.upsert({
-//           sql,
-//           table: 'osm_ways_test',
-//           data: {
-//             id: way.$.id,
-//             timestamp: way.$.timestamp,
-//             version: way.$.version
-//           },
-//           conflict: [
-//             'id',
-//           ],
-//           updateFields: [
-//             'timestamp'
-//           ],
-//         })
-//       }
-//       catch (e) {
-//         logger.error(`POSTGRES ERROR: insert failed for upsert way ${way.$.id}`);
-//       }
-//     })
-//     .on('endElement: relation', (relation) => {
-//       logger.info(`UPSERT RELATION: upsert relation id ${relation.$.id}`, filename);
-//       try {
-//         db.upsert({
-//           sql,
-//           table: 'osm_relations',
-//           data: {
-//             id: relation.$.id,
-//             timestamp: relation.$.timestamp,
-//             version: relation.$.version
-//           },
-//           conflict: [
-//             'id',
-//           ],
-//           updateFields: [
-//             'version',
-//             'timestamp'
-//           ],
-//       }); 
-//     }
-//     catch (e) {
-//       logger.error(`POSTGRES ERROR: insert failed for upsert relation ${relation.$.id}`);
-//     }
-//   });
-// }
-
 async function osm(filename: string, start: number, end: number) {
   let currentByte = start;
   let count = 0;
@@ -131,22 +45,223 @@ async function osm(filename: string, start: number, end: number) {
   const readableStream = fs.createReadStream(
     filepath,
     {
-      // objectMode: true,
       highWaterMark: 1000,
       start,
     }
   );
 
-  osmXmlParser.on('node', (element) => {
-    logger.info(`FOUND <node />: ${JSON.stringify(element)}`);
+  osmXmlParser.on('node', (node: TagData) => {
+    if (count % 100 === 0) {
+      logger.info(`FOUND <node>: upsert node ${JSON.stringify(node.properties)}`, filename);
+    }
+    try {
+      db.upsert({
+        sql,
+        table: 'osm_nodes_test',
+        data: {
+          id: node.properties.id,
+          timestamp: node.properties.timestamp,
+          lat: node.properties.lat,
+          lon: node.properties.lon,
+        },
+        conflict: [
+          'id',
+        ],
+        updateFields: [
+          'lat',
+          'lon',
+          'timestamp'
+        ],
+      })
+    }
+    catch (e) {
+      logger.error(`POSTGRES ERROR: insert failed for upsert <node /> ${node.properties.id}`);
+    }
+    node.children?.forEach((tag) => {
+      try {
+        if (count % 100 === 0) {
+          logger.info(`FOUND <tag>: upsert <tag /> with key = ${tag.properties.k} and value = ${tag.properties.v} for node id ${node.properties.id}`, filename);
+        }
+        db.upsert({
+          sql,
+          table: 'osm_meta_tags',
+          data: {
+            node_id: node.properties.id,
+            k: tag.properties.k,
+            v: tag.properties.v,
+          },
+          conflict: [
+            'node_id',
+            'k'
+          ],
+          updateFields: [
+            'v',
+          ],
+        });
+      }
+      catch (e) {
+        logger.error(`POSTGRES ERROR: insert failed for upsert <tag /> where k = ${tag.properties.key}, v = ${tag.properties.v}, node.id = ${node.properties.id}. original tag: ${tag.tag} in ${filename}`);
+      }
+    })
   });
 
-  osmXmlParser.on('way', (element) => {
-    logger.info(`FOUND <way />: ${JSON.stringify(element)}`);
+  osmXmlParser.on('way', (way) => {
+    if (count % 100 === 0) {
+      logger.info(`FOUND <way>: ${JSON.stringify(way.properties)}`, filename);
+    }
+    try {
+      db.upsert({
+        sql,
+        table: 'osm_ways_test',
+        data: {
+          id: way.properties.id,
+          timestamp: way.properties.timestamp,
+          version: way.properties.version
+        },
+        conflict: [
+          'id',
+        ],
+        updateFields: [
+          'timestamp'
+        ],
+      })
+    }
+    catch (e) {
+      logger.error(`POSTGRES ERROR: insert failed for upsert <way /> ${way.properties.id}`);
+    }
+    const ndElements = way.children?.filter((child) => child.name === 'nd');
+    const tagElements = way.children?.filter((child) => child.name === 'tag');
+    ndElements?.forEach((nd, i) => {
+      try {
+        if (count % 100 === 0) {
+          logger.info(`FOUND <nd>: upsert <nd /> where ref = ${nd.properties.ref} and way id = ${way.properties.id}`, filename);
+        }
+        db.insert({
+          sql,
+          table: 'osm_ways_nodes',
+          data: {
+            way_id: way.properties.id,
+            node_id: nd.properties.ref,
+            order: i + 1,
+          },
+        })
+      }
+      catch(e) {
+        logger.error(`POSTGRES ERROR: insert failed for upsert <nd /> ${nd.properties.id}. original tag: ${nd.tag} in ${filename}`);
+      }
+    })
+    tagElements?.forEach((tag, i) => {
+      try {
+        if (count % 100 === 0) {
+          logger.info(`FOUND <tag>: upsert <tag /> where key = ${tag.properties.k} and value = ${tag.properties.v} and way id = ${way.properties.id}`, filename);
+        }
+        db.upsert({
+          sql,
+          table: 'osm_meta_tags',
+          data: {
+            way_id: way.properties.id,
+            k: tag.properties.k,
+            v: tag.properties.v.trim(),
+          },
+          conflict: [
+            'way_id',
+            'k'
+          ],
+          updateFields: [
+            'v',
+          ],
+        });
+      }
+      catch(e) {
+        logger.error(`POSTGRES ERROR: insert failed for upsert <tag /> where k = ${tag.properties.key}, v = ${tag.properties.v}, way.id = ${way.properties.id}. original tag: ${tag.tag} in ${filename}`);
+      }
+    })
   });
 
-  osmXmlParser.on('relation', (element) => {
-    logger.info(`FOUND <relation />: ${JSON.stringify(element)}`);
+  osmXmlParser.on('relation', (relation) => {
+    if (count % 100 === 0) {
+      logger.info(`FOUND <relation>: ${JSON.stringify(relation)}`);
+    }
+    try {
+      db.upsert({
+        sql,
+        table: 'osm_relations',
+        data: {
+          id: relation.properties.id,
+          timestamp: relation.properties.timestamp,
+          version: relation.properties.version
+        },
+        conflict: [
+          'id',
+        ],
+        updateFields: [
+          'version',
+          'timestamp'
+        ],
+      }); 
+    }
+    catch (e) {
+      logger.error(`POSTGRES ERROR: insert failed for upsert <relation /> ${relation.properties.id}`);
+    }
+    const memberElements = relation.children?.filter((child) => child.name === 'member');
+    const tagElements = relation.children?.filter((child) => child.name === 'tag');
+    try {
+      db.remove({
+        sql,
+        table: 'osm_relations_members',
+        conditions: {
+          relation_id: relation.properties.id,
+        }
+      });
+    }
+    catch (e) {
+      logger.error(`POSTGRES ERROR: remove failed for delete member nodes from ${relation.properties.id}`);
+    }
+    memberElements?.forEach((member, i) => {
+      try {
+        if (count % 100 === 0) {
+          logger.info(`FOUND <member>: upsert <member /> where ref = ${member.properties.ref} and relation id = ${relation.properties.id}`, filename);
+        }
+        db.insert({
+          sql,
+          table: 'osm_relations_members',
+          data: {
+            way_id: member.properties.type === 'way' ? member.properties.ref : null,
+            node_id: member.properties.type === 'node' ? member.properties.ref : null,
+            role: member.properties.role,
+          },
+        });
+      }
+      catch (e) {
+        logger.error(`POSTGRES ERROR: insert failed for upsert <member /> ${member.properties.id}. original tag: ${member.tag} in ${filename}`);
+      }
+    });
+    tagElements?.forEach((tag) => {
+      try {
+        if (count % 100 === 0) {
+          logger.info(`FOUND <tag>: upsert <tag /> where k = ${tag.properties.k}, v = ${tag.properties.v}, relation.id = ${relation.properties.id}`, filename);
+        }
+        db.upsert({
+          sql,
+          table: 'osm_meta_tags',
+          data: {
+            relation_id: relation.properties.id,
+            k: tag.properties.k,
+            v: tag.properties.v.trim(),
+          },
+          conflict: [
+            'relation_id',
+            'k'
+          ],
+          updateFields: [
+            'v',
+          ],
+        });
+      }
+      catch (e) {
+        logger.error(`POSTGRES ERROR: insert failed for upsert <tag /> where k = ${tag.properties.key}, v = ${tag.properties.v}, relation.id = ${relation.properties.id}. original tag: ${tag.tag} in ${filename}`);
+      }
+    });
   });
 
   osmXmlParser.on('tag', (element) => {
@@ -157,17 +272,19 @@ async function osm(filename: string, start: number, end: number) {
     logger.info(`FOUND <nd />: ${JSON.stringify(element)}`);
   });
 
+  await connect();
+
   readableStream
     .on('data', (chunk) => {
       currentByte += chunk.length;
-      if (currentByte < 8000) {
-        console.log('>> chunk count', count);
-        count++;
-
-        readableStream.pause();
-        osmXmlParser.handleChunk(chunk.toString());
-        readableStream.resume();
+      if (count % 100 === 0) {
+        logger.info(`CHUNK COUNT: ${count}`);
       }
+      count++;
+
+      readableStream.pause();
+      osmXmlParser.handleChunk(chunk.toString());
+      readableStream.resume();
     })
     .on('error', (e) => {
       logger.error(`ERROR: elements - stream read error in file ${filename} at byte ${currentByte}`, e);

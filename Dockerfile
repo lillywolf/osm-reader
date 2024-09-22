@@ -6,6 +6,7 @@ WORKDIR /src
 COPY package*.json ./
 RUN npm install
 COPY . .
+COPY .env .env
 
 # Install curl
 RUN apt-get update && apt-get install curl

@@ -5,7 +5,8 @@ import * as db from './db';
 import OSMXmlParser, { TagData } from './xml/parse';
 import Logger from './logger';
 
-dotenv.config();
+dotenv.config({ path: '../.env' });
+console.log('>> process.env', process.env);
 
 let sql;
 

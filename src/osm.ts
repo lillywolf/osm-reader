@@ -7,7 +7,7 @@ import Logger from './logger';
 
 dotenv.config({ path: '../.env' });
 
-const LOG_INCREMENT = 1000;
+const LOG_INCREMENT = 10000;
 
 let sql;
 
@@ -59,7 +59,7 @@ async function osm(filename: string, start: number, end: number) {
     try {
       db.upsert({
         sql,
-        table: 'osm_nodes_test',
+        table: 'osm_nodes',
         data: {
           id: node.properties.id,
           timestamp: node.properties.timestamp,
@@ -114,7 +114,7 @@ async function osm(filename: string, start: number, end: number) {
     try {
       db.upsert({
         sql,
-        table: 'osm_ways_test',
+        table: 'osm_ways',
         data: {
           id: way.properties.id,
           timestamp: way.properties.timestamp,

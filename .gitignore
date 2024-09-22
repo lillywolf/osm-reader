@@ -137,11 +137,14 @@ dashboard-secret.yaml
 dashboard-role.yaml
 dashboard-admin.yaml
 
-# /data folder
+# /data
 src/data
 
-# /b2 folder
+# /b2
 b2/
 
-# /bin folder
+# /bin
 bin/
+
+public/
+routes/

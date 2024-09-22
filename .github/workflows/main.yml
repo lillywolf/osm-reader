@@ -6,6 +6,7 @@ on:
 
 jobs:
   build:
+    environment: production
     runs-on: ubuntu-latest
     steps:          
       - name: Code checkout
@@ -22,6 +23,14 @@ jobs:
 
       - name: Build Docker image
         run: docker build -t ${{ secrets.DOCKER_USERNAME }}/osm-reader:$(echo $GITHUB_SHA | head -c7) .
+        env:
+          SUPABASE_HOST: ${{ secrets.SUPABASE_HOST }}
+          SUPABASE_PORT: ${{ secrets.SUPABASE_PORT }}
+          SUPABASE_USER: ${{ secrets.SUPABASE_USER }}
+          SUPABASE_PASSWORD: ${{ secrets.SUPABASE_PASSWORD }}
+          GRAFANA_API_USER: ${{ secrets.GRAFANA_API_USER }}
+          GRAFANA_API_HOST: ${{ secrets.GRAFANA_API_HOST }}
+          GRAFANA_API_PASSWORD: ${{ secrets.GRAFANA_API_PASSWORD }}
 
       - name: Push Docker image
         run: docker push ${{ secrets.DOCKER_USERNAME }}/osm-reader:$(echo $GITHUB_SHA | head -c7)

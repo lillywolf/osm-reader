@@ -6,7 +6,8 @@ import OSMXmlParser, { TagData } from './xml/parse';
 import Logger from './logger';
 
 dotenv.config({ path: '../.env' });
-console.log('>> process.env', process.env);
+
+const LOG_INCREMENT = 1000;
 
 let sql;
 
@@ -52,7 +53,7 @@ async function osm(filename: string, start: number, end: number) {
   );
 
   osmXmlParser.on('node', (node: TagData) => {
-    if (count % 100 === 0) {
+    if (count % LOG_INCREMENT === 0) {
       logger.info(`FOUND <node>: upsert node ${JSON.stringify(node.properties)}`, filename);
     }
     try {
@@ -80,7 +81,7 @@ async function osm(filename: string, start: number, end: number) {
     }
     node.children?.forEach((tag) => {
       try {
-        if (count % 100 === 0) {
+        if (count % LOG_INCREMENT === 0) {
           logger.info(`FOUND <tag>: upsert <tag /> with key = ${tag.properties.k} and value = ${tag.properties.v} for node id ${node.properties.id}`, filename);
         }
         db.upsert({
@@ -107,7 +108,7 @@ async function osm(filename: string, start: number, end: number) {
   });
 
   osmXmlParser.on('way', (way) => {
-    if (count % 100 === 0) {
+    if (count % LOG_INCREMENT === 0) {
       logger.info(`FOUND <way>: ${JSON.stringify(way.properties)}`, filename);
     }
     try {
@@ -134,7 +135,7 @@ async function osm(filename: string, start: number, end: number) {
     const tagElements = way.children?.filter((child) => child.name === 'tag');
     ndElements?.forEach((nd, i) => {
       try {
-        if (count % 100 === 0) {
+        if (count % LOG_INCREMENT === 0) {
           logger.info(`FOUND <nd>: upsert <nd /> where ref = ${nd.properties.ref} and way id = ${way.properties.id}`, filename);
         }
         db.insert({
@@ -153,7 +154,7 @@ async function osm(filename: string, start: number, end: number) {
     })
     tagElements?.forEach((tag, i) => {
       try {
-        if (count % 100 === 0) {
+        if (count % LOG_INCREMENT === 0) {
           logger.info(`FOUND <tag>: upsert <tag /> where key = ${tag.properties.k} and value = ${tag.properties.v} and way id = ${way.properties.id}`, filename);
         }
         db.upsert({
@@ -180,7 +181,7 @@ async function osm(filename: string, start: number, end: number) {
   });
 
   osmXmlParser.on('relation', (relation) => {
-    if (count % 100 === 0) {
+    if (count % LOG_INCREMENT === 0) {
       logger.info(`FOUND <relation>: ${JSON.stringify(relation)}`);
     }
     try {
@@ -220,7 +221,7 @@ async function osm(filename: string, start: number, end: number) {
     }
     memberElements?.forEach((member, i) => {
       try {
-        if (count % 100 === 0) {
+        if (count % LOG_INCREMENT === 0) {
           logger.info(`FOUND <member>: upsert <member /> where ref = ${member.properties.ref} and relation id = ${relation.properties.id}`, filename);
         }
         db.insert({
@@ -239,7 +240,7 @@ async function osm(filename: string, start: number, end: number) {
     });
     tagElements?.forEach((tag) => {
       try {
-        if (count % 100 === 0) {
+        if (count % LOG_INCREMENT === 0) {
           logger.info(`FOUND <tag>: upsert <tag /> where k = ${tag.properties.k}, v = ${tag.properties.v}, relation.id = ${relation.properties.id}`, filename);
         }
         db.upsert({
@@ -278,7 +279,7 @@ async function osm(filename: string, start: number, end: number) {
   readableStream
     .on('data', (chunk) => {
       currentByte += chunk.length;
-      if (count % 100 === 0) {
+      if (count % LOG_INCREMENT === 0) {
         logger.info(`CHUNK COUNT: ${count}`);
       }
       count++;

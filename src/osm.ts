@@ -7,7 +7,7 @@ import Logger from './logger';
 
 dotenv.config({ path: '../.env' });
 
-const LOG_INCREMENT = 100;
+const LOG_INCREMENT = 1000;
 
 let sql;
 
@@ -54,9 +54,9 @@ async function osm(filename: string, start: number, end: number) {
   );
 
   osmXmlParser.on('node', (node: TagData) => {
-    if (count % LOG_INCREMENT === 0) {
-      logger.info(`FOUND <node>: upsert node ${JSON.stringify(node.properties)}`, filename);
-    }
+    // if (count % LOG_INCREMENT === 0) {
+    //   logger.info(`FOUND <node>: upsert node ${JSON.stringify(node.properties)}`, filename);
+    // }
     try {
       db.upsert({
         sql,
@@ -82,9 +82,9 @@ async function osm(filename: string, start: number, end: number) {
     }
     node.children?.forEach((tag) => {
       try {
-        if (count % LOG_INCREMENT === 0) {
-          logger.info(`FOUND <tag>: upsert <tag /> with key = ${tag.properties.k} and value = ${tag.properties.v} for node id ${node.properties.id}`, filename);
-        }
+        // if (count % LOG_INCREMENT === 0) {
+        //   logger.info(`FOUND <tag>: upsert <tag /> with key = ${tag.properties.k} and value = ${tag.properties.v} for node id ${node.properties.id}`, filename);
+        // }
         db.upsert({
           sql,
           table: 'osm_meta_tags',
@@ -109,9 +109,9 @@ async function osm(filename: string, start: number, end: number) {
   });
 
   osmXmlParser.on('way', (way) => {
-    if (count % LOG_INCREMENT === 0) {
-      logger.info(`FOUND <way>: ${JSON.stringify(way.properties)}`, filename);
-    }
+    // if (count % LOG_INCREMENT === 0) {
+    //   logger.info(`FOUND <way>: ${JSON.stringify(way.properties)}`, filename);
+    // }
     try {
       db.upsert({
         sql,
@@ -136,9 +136,9 @@ async function osm(filename: string, start: number, end: number) {
     const tagElements = way.children?.filter((child) => child.name === 'tag');
     ndElements?.forEach((nd, i) => {
       try {
-        if (count % LOG_INCREMENT === 0) {
-          logger.info(`FOUND <nd>: upsert <nd /> where ref = ${nd.properties.ref} and way id = ${way.properties.id}`, filename);
-        }
+        // if (count % LOG_INCREMENT === 0) {
+        //   logger.info(`FOUND <nd>: upsert <nd /> where ref = ${nd.properties.ref} and way id = ${way.properties.id}`, filename);
+        // }
         db.insert({
           sql,
           table: 'osm_ways_nodes',
@@ -155,9 +155,9 @@ async function osm(filename: string, start: number, end: number) {
     })
     tagElements?.forEach((tag, i) => {
       try {
-        if (count % LOG_INCREMENT === 0) {
-          logger.info(`FOUND <tag>: upsert <tag /> where key = ${tag.properties.k} and value = ${tag.properties.v} and way id = ${way.properties.id}`, filename);
-        }
+        // if (count % LOG_INCREMENT === 0) {
+        //   logger.info(`FOUND <tag>: upsert <tag /> where key = ${tag.properties.k} and value = ${tag.properties.v} and way id = ${way.properties.id}`, filename);
+        // }
         db.upsert({
           sql,
           table: 'osm_meta_tags',
@@ -182,9 +182,9 @@ async function osm(filename: string, start: number, end: number) {
   });
 
   osmXmlParser.on('relation', (relation) => {
-    if (count % LOG_INCREMENT === 0) {
-      logger.info(`FOUND <relation>: ${JSON.stringify(relation)}`);
-    }
+    // if (count % LOG_INCREMENT === 0) {
+    //   logger.info(`FOUND <relation>: ${JSON.stringify(relation)}`);
+    // }
     try {
       db.upsert({
         sql,
@@ -222,9 +222,9 @@ async function osm(filename: string, start: number, end: number) {
     }
     memberElements?.forEach((member, i) => {
       try {
-        if (count % LOG_INCREMENT === 0) {
-          logger.info(`FOUND <member>: upsert <member /> where ref = ${member.properties.ref} and relation id = ${relation.properties.id}`, filename);
-        }
+        // if (count % LOG_INCREMENT === 0) {
+        //   logger.info(`FOUND <member>: upsert <member /> where ref = ${member.properties.ref} and relation id = ${relation.properties.id}`, filename);
+        // }
         db.insert({
           sql,
           table: 'osm_relations_members',
@@ -241,9 +241,9 @@ async function osm(filename: string, start: number, end: number) {
     });
     tagElements?.forEach((tag) => {
       try {
-        if (count % LOG_INCREMENT === 0) {
-          logger.info(`FOUND <tag>: upsert <tag /> where k = ${tag.properties.k}, v = ${tag.properties.v}, relation.id = ${relation.properties.id}`, filename);
-        }
+        // if (count % LOG_INCREMENT === 0) {
+        //   logger.info(`FOUND <tag>: upsert <tag /> where k = ${tag.properties.k}, v = ${tag.properties.v}, relation.id = ${relation.properties.id}`, filename);
+        // }
         db.upsert({
           sql,
           table: 'osm_meta_tags',

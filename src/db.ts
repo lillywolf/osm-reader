@@ -24,6 +24,7 @@ export const upsert = async ({
   }
   catch (e) {
     logger.error(`POSTGRES ERROR: upsert failed for table ${table} and data ${JSON.stringify(data)}`, e);
+    throw e;
   }
 };
 
@@ -39,6 +40,7 @@ export const insert = async ({
   }
   catch (e) {
     logger.error(`POSTGRES ERROR: insert failed for table ${table} and data ${JSON.stringify(data)}`, e);
+    throw e;
   }
 };
 
@@ -60,5 +62,6 @@ export const remove = async ({
   }
   catch (e) {
     logger.error(`POSTGRES ERROR: remove failed for table ${table} and conditions ${JSON.stringify(conditions)}`, e);
+    throw e;
   }
 }

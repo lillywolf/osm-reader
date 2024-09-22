@@ -7,7 +7,7 @@ import Logger from './logger';
 
 dotenv.config({ path: '../.env' });
 
-const LOG_INCREMENT = 10000;
+const LOG_INCREMENT = 100;
 
 let sql;
 
@@ -49,6 +49,7 @@ async function osm(filename: string, start: number, end: number) {
     {
       highWaterMark: 1000,
       start,
+      ...(end && {end})
     }
   );
 
@@ -279,14 +280,18 @@ async function osm(filename: string, start: number, end: number) {
   readableStream
     .on('data', (chunk) => {
       currentByte += chunk.length;
+
       if (count % LOG_INCREMENT === 0) {
         logger.info(`CHUNK COUNT: ${count}`);
       }
-      count++;
 
+      count++;
       readableStream.pause();
-      osmXmlParser.handleChunk(chunk.toString());
-      readableStream.resume();
+      setTimeout(() => {
+        count++;
+        osmXmlParser.handleChunk(chunk.toString());
+        readableStream.resume();
+      }, 10);
     })
     .on('error', (e) => {
       logger.error(`ERROR: elements - stream read error in file ${filename} at byte ${currentByte}`, e);

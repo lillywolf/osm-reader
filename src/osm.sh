@@ -15,3 +15,4 @@ if [ ! $filename ]; then
 fi
 
 npx tsx ./osm.ts $filename $start $end
+# npx tsx --trace_gc --inspect ./osm.ts $filename $start $end

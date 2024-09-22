@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import truthyFilter from '../util/truthyFilter';
+import Logger from '../logger';
 
 export type TagData = {
   name: string;
@@ -20,36 +21,35 @@ export type ParentTagData = {
 class OSMXmlParser {
   currentParentTag: TagData | null;
   callbackMap: Record<string, (element: TagData) => any>;
-  leftoverChunk: string;
+  chunk: string;
 
   constructor() {
     this.callbackMap = {};
+    this.chunk = '';
   }
 
-  handleChunk(chunk: string) {
+  handleChunk(_chunk: string = '') {
+    const logger = Logger.getInstance();
     const chunkId = crypto.randomBytes(10).toString('hex');
 
     // If there is a chunk left over from the last run
     // Append it to the current chunk
-    if (this.leftoverChunk) {
-      chunk = this.leftoverChunk + chunk;
-      this.leftoverChunk = '';
-    }
+    this.chunk = this.chunk + _chunk;
+
+    if (!this.chunk.length) return;
 
     if (!this.currentParentTag) {
       // Get the next parent tag
-      const nextParent = getNextParentTag(chunk);
+      const nextParent = getNextParentTag(this.chunk);
 
-      // If none found, get the rest of the chunk
-      // To append to the next incoming chunk
-      if (!nextParent) {
-        this.leftoverChunk = chunk;
-        return;
-      };
+      // If none found, exit early
+      // Note that _chunk has already been appended to this.chunk
+      if (!nextParent) return;
 
       // If the tag is the parent <?xml> tag
       if (nextParent.tag.match(/<\?(\w*) (.*)\?>/)) {
-        this.handleChunk(chunk.slice(nextParent.lastIndex).toString());
+        this.chunk = this.chunk.slice(nextParent.lastIndex)
+        this.handleChunk();
         return;
       };
 
@@ -63,14 +63,14 @@ class OSMXmlParser {
           // Call the callback registered for the tag
           this.callbackMap[decorated.name](decorated);
     
-          // Get the next chunk and pass it into the recursive function
-          const newChunk = chunk.toString().slice(decorated.lastIndex).toString();
-          this.handleChunk(newChunk);
+          // Proceed to recurse early
+          this.chunk = this.chunk.slice(decorated.lastIndex);
+          this.handleChunk();
           return;
         }
       }
       catch (e) {
-        console.error(e);
+        logger.error(e);
         return;
       }
 
@@ -82,12 +82,12 @@ class OSMXmlParser {
     }
 
     // Match the next closing parent tag
-    const chunkAfterParentTag = chunk.slice(this.getCurrentParentLastIndex(chunkId));
+    const chunkAfterParentTag = this.chunk.slice(this.getCurrentParentLastIndex(chunkId));
     const closingParent = getClosingTag(chunkAfterParentTag);
 
     // If none found, break out of the processing sequence
     if (!closingParent) {
-      this.leftoverChunk = chunk.slice(this.currentParentTag.index);
+      this.chunk = this.chunk.slice(this.currentParentTag.index);
       return;
     };
 
@@ -103,7 +103,7 @@ class OSMXmlParser {
       let childData = getClosedTagPropertiesString(childTag);
 
       if (!childData) {
-        console.error(`ERROR: error getting properties string for child tag`, childTag);
+        logger.error(`ERROR: error getting properties string for child tag`, childTag);
         return null;
       }
 
@@ -121,7 +121,7 @@ class OSMXmlParser {
     .filter(truthyFilter);
 
     if (!this.callbackMap[this.currentParentTag.name]) {
-      console.error(`ERROR: No callback found for tagName`, this.currentParentTag.name);
+      logger.error(`ERROR: No callback found for tagName`, this.currentParentTag.name);
       return;
     }
 
@@ -129,10 +129,10 @@ class OSMXmlParser {
     this.callbackMap[this.currentParentTag.name](this.currentParentTag);
 
     // Get the next chunk and pass it into the recursive function
-    const newChunk = chunk.toString().slice(this.getCurrentParentLastIndex(chunkId) + closingParent.lastIndex).toString();
+    this.chunk = this.chunk.toString().slice(this.getCurrentParentLastIndex(chunkId) + closingParent.lastIndex);
 
     this.currentParentTag = null;
-    this.handleChunk(newChunk);
+    this.handleChunk();
   }
 
   on(tagName: string, callback: (element: TagData) => any) {

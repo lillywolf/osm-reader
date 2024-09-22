@@ -1,7 +1,3 @@
-# b2
-
-b2/
-
 # Logs
 logs
 *.log
@@ -141,4 +137,11 @@ dashboard-secret.yaml
 dashboard-role.yaml
 dashboard-admin.yaml
 
+# /data folder
 src/data
+
+# /b2 folder
+b2/
+
+# /bin folder
+bin/

@@ -60,7 +60,7 @@ async function osm(filename: string, start: number, end: number) {
     try {
       db.upsert({
         sql,
-        table: 'osm_nodes',
+        table: 'osm_nodes_test',
         data: {
           id: node.properties.id,
           timestamp: node.properties.timestamp,

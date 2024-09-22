@@ -21,16 +21,18 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Create .env file
+        run: |
+          echo "SUPABASE_HOST=${{ secrets.SUPABASE_HOST }}" >> .env
+          echo "SUPABASE_PORT=${{ secrets.SUPABASE_PORT }}" >> .env
+          echo "SUPABASE_USER=${{ secrets.SUPABASE_USER }}" >> .env
+          echo "SUPABASE_PASSWORD=${{ secrets.SUPABASE_PASSWORD }}" >> .env
+          echo "GRAFANA_API_USER=${{ secrets.GRAFANA_API_USER }}" >> .env
+          echo "GRAFANA_API_HOST=${{ secrets.GRAFANA_API_HOST }}" >> .env
+          echo "GRAFANA_API_PASSWORD=${{ secrets.GRAFANA_API_PASSWORD }}" >> .env
+
       - name: Build Docker image
         run: docker build -t ${{ secrets.DOCKER_USERNAME }}/osm-reader:$(echo $GITHUB_SHA | head -c7) .
-        env:
-          SUPABASE_HOST: ${{ secrets.SUPABASE_HOST }}
-          SUPABASE_PORT: ${{ secrets.SUPABASE_PORT }}
-          SUPABASE_USER: ${{ secrets.SUPABASE_USER }}
-          SUPABASE_PASSWORD: ${{ secrets.SUPABASE_PASSWORD }}
-          GRAFANA_API_USER: ${{ secrets.GRAFANA_API_USER }}
-          GRAFANA_API_HOST: ${{ secrets.GRAFANA_API_HOST }}
-          GRAFANA_API_PASSWORD: ${{ secrets.GRAFANA_API_PASSWORD }}
 
       - name: Push Docker image
         run: docker push ${{ secrets.DOCKER_USERNAME }}/osm-reader:$(echo $GITHUB_SHA | head -c7)

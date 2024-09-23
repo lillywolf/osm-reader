@@ -81,12 +81,12 @@ async function osm(filename: string, start: number, end: number) {
       logger.error(`POSTGRES ERROR: insert failed for upsert <node /> ${node.properties.id} in file ${filename}`);
       logger.error(`--> currentByte: ${currentByte} - ${filename}`)
     }
-    node.children?.forEach((tag) => {
+    node.children?.forEach(async (tag) => {
       try {
         // if (count % LOG_INCREMENT === 0) {
         //   logger.info(`FOUND <tag>: upsert <tag /> with key = ${tag.properties.k} and value = ${tag.properties.v} for node id ${node.properties.id}`, filename);
         // }
-        db.upsert({
+        await db.upsert({
           sql,
           table: 'osm_meta_tags',
           data: {
@@ -137,12 +137,12 @@ async function osm(filename: string, start: number, end: number) {
     }
     const ndElements = way.children?.filter((child) => child.name === 'nd');
     const tagElements = way.children?.filter((child) => child.name === 'tag');
-    ndElements?.forEach((nd, i) => {
+    ndElements?.forEach(async (nd, i) => {
       try {
         // if (count % LOG_INCREMENT === 0) {
         //   logger.info(`FOUND <nd>: upsert <nd /> where ref = ${nd.properties.ref} and way id = ${way.properties.id}`, filename);
         // }
-        db.insert({
+        await db.insert({
           sql,
           table: 'osm_ways_nodes',
           data: {
@@ -157,12 +157,12 @@ async function osm(filename: string, start: number, end: number) {
         logger.error(`--> currentByte: ${currentByte} - ${filename}`)
       }
     })
-    tagElements?.forEach((tag, i) => {
+    tagElements?.forEach(async (tag, i) => {
       try {
         // if (count % LOG_INCREMENT === 0) {
         //   logger.info(`FOUND <tag>: upsert <tag /> where key = ${tag.properties.k} and value = ${tag.properties.v} and way id = ${way.properties.id}`, filename);
         // }
-        db.upsert({
+        await db.upsert({
           sql,
           table: 'osm_meta_tags',
           data: {
@@ -227,12 +227,12 @@ async function osm(filename: string, start: number, end: number) {
       logger.error(`POSTGRES ERROR: remove failed for delete member nodes from ${relation.properties.id} in file ${filename}`);
       logger.error(`--> currentByte: ${currentByte} - ${filename}`)
     }
-    memberElements?.forEach((member, i) => {
+    memberElements?.forEach(async (member, i) => {
       try {
         // if (count % LOG_INCREMENT === 0) {
         //   logger.info(`FOUND <member>: upsert <member /> where ref = ${member.properties.ref} and relation id = ${relation.properties.id}`, filename);
         // }
-        db.insert({
+        await db.insert({
           sql,
           table: 'osm_relations_members',
           data: {
@@ -247,12 +247,12 @@ async function osm(filename: string, start: number, end: number) {
         logger.error(`--> currentByte: ${currentByte} - ${filename}`)
       }
     });
-    tagElements?.forEach((tag) => {
+    tagElements?.forEach(async (tag) => {
       try {
         // if (count % LOG_INCREMENT === 0) {
         //   logger.info(`FOUND <tag>: upsert <tag /> where k = ${tag.properties.k}, v = ${tag.properties.v}, relation.id = ${relation.properties.id}`, filename);
         // }
-        db.upsert({
+        await db.upsert({
           sql,
           table: 'osm_meta_tags',
           data: {

@@ -25,8 +25,8 @@ async function connectWithRefresh() {
   return db.connect({
     onclose: (connectionId: string) => {
       logger.error('POSTGRES CONNECTION CLOSED', connectionId);
-      logger.info('ATTEMPTING RECONNECTION');
-      connect();
+      // logger.info('ATTEMPTING RECONNECTION');
+      // connect();
     },
     onnotice: (message: string) => {
       logger.warn('POSTGRES CONNECTION NOTICE', message);

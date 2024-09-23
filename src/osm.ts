@@ -78,8 +78,8 @@ async function osm(filename: string, start: number, end: number) {
       })
     }
     catch (e) {
-      logger.error(`POSTGRES ERROR: insert failed for upsert <node /> ${node.properties.id}`, filename);
-      logger.error(`--> currentByte: ${currentByte}`, filename)
+      logger.error(`POSTGRES ERROR: insert failed for upsert <node /> ${node.properties.id} in file ${filename}`);
+      logger.error(`--> currentByte: ${currentByte} - ${filename}`)
     }
     node.children?.forEach((tag) => {
       try {
@@ -104,8 +104,8 @@ async function osm(filename: string, start: number, end: number) {
         });
       }
       catch (e) {
-        logger.error(`POSTGRES ERROR: insert failed for upsert <tag /> where k = ${tag.properties.key}, v = ${tag.properties.v}, node.id = ${node.properties.id}. original tag: ${tag.tag} in ${filename}`);
-        logger.error(`--> currentByte: ${currentByte}`, filename)
+        logger.error(`POSTGRES ERROR: insert failed for upsert <tag /> where k = ${tag.properties.key}, v = ${tag.properties.v}, node.id = ${node.properties.id}. original tag: ${tag.tag} in file ${filename}`);
+        logger.error(`--> currentByte: ${currentByte} - ${filename}`)
       }
     })
   });
@@ -132,8 +132,8 @@ async function osm(filename: string, start: number, end: number) {
       })
     }
     catch (e) {
-      logger.error(`POSTGRES ERROR: insert failed for upsert <way /> ${way.properties.id}`, filename);
-      logger.error(`--> currentByte: ${currentByte}`, filename)
+      logger.error(`POSTGRES ERROR: insert failed for upsert <way /> ${way.properties.id} in file ${filename}`);
+      logger.error(`--> currentByte: ${currentByte} - ${filename}`)
     }
     const ndElements = way.children?.filter((child) => child.name === 'nd');
     const tagElements = way.children?.filter((child) => child.name === 'tag');
@@ -153,8 +153,8 @@ async function osm(filename: string, start: number, end: number) {
         })
       }
       catch(e) {
-        logger.error(`POSTGRES ERROR: insert failed for upsert <nd /> ${nd.properties.id}. original tag: ${nd.tag} in ${filename}`);
-        logger.error(`--> currentByte: ${currentByte}`, filename)
+        logger.error(`POSTGRES ERROR: insert failed for upsert <nd /> ${nd.properties.id}. original tag: ${nd.tag} in file ${filename}`);
+        logger.error(`--> currentByte: ${currentByte} - ${filename}`)
       }
     })
     tagElements?.forEach((tag, i) => {
@@ -180,8 +180,8 @@ async function osm(filename: string, start: number, end: number) {
         });
       }
       catch(e) {
-        logger.error(`POSTGRES ERROR: insert failed for upsert <tag /> where k = ${tag.properties.key}, v = ${tag.properties.v}, way.id = ${way.properties.id}. original tag: ${tag.tag} in ${filename}`);
-        logger.error(`--> currentByte: ${currentByte}`, filename)
+        logger.error(`POSTGRES ERROR: insert failed for upsert <tag /> where k = ${tag.properties.key}, v = ${tag.properties.v}, way.id = ${way.properties.id}. original tag: ${tag.tag} in filename ${filename}`);
+        logger.error(`--> currentByte: ${currentByte} - ${filename}`)
       }
     })
   });
@@ -210,6 +210,7 @@ async function osm(filename: string, start: number, end: number) {
     }
     catch (e) {
       logger.error(`POSTGRES ERROR: insert failed for upsert <relation /> ${relation.properties.id}`);
+      logger.error(`--> currentByte: ${currentByte} - ${filename}`)
     }
     const memberElements = relation.children?.filter((child) => child.name === 'member');
     const tagElements = relation.children?.filter((child) => child.name === 'tag');
@@ -223,8 +224,8 @@ async function osm(filename: string, start: number, end: number) {
       });
     }
     catch (e) {
-      logger.error(`POSTGRES ERROR: remove failed for delete member nodes from ${relation.properties.id}`, filename);
-      logger.error(`--> currentByte: ${currentByte}`, filename)
+      logger.error(`POSTGRES ERROR: remove failed for delete member nodes from ${relation.properties.id} in file ${filename}`);
+      logger.error(`--> currentByte: ${currentByte} - ${filename}`)
     }
     memberElements?.forEach((member, i) => {
       try {
@@ -242,8 +243,8 @@ async function osm(filename: string, start: number, end: number) {
         });
       }
       catch (e) {
-        logger.error(`POSTGRES ERROR: insert failed for upsert <member /> ${member.properties.id}. original tag: ${member.tag} in ${filename}`);
-        logger.error(`--> currentByte: ${currentByte}`, filename)
+        logger.error(`POSTGRES ERROR: insert failed for upsert <member /> ${member.properties.id}. original tag: ${member.tag} in file ${filename}`);
+        logger.error(`--> currentByte: ${currentByte} - ${filename}`)
       }
     });
     tagElements?.forEach((tag) => {
@@ -269,8 +270,8 @@ async function osm(filename: string, start: number, end: number) {
         });
       }
       catch (e) {
-        logger.error(`POSTGRES ERROR: insert failed for upsert <tag /> where k = ${tag.properties.key}, v = ${tag.properties.v}, relation.id = ${relation.properties.id}. original tag: ${tag.tag} in ${filename}`);
-        logger.error(`--> currentByte: ${currentByte}`, filename)
+        logger.error(`POSTGRES ERROR: insert failed for upsert <tag /> where k = ${tag.properties.key}, v = ${tag.properties.v}, relation.id = ${relation.properties.id}. original tag: ${tag.tag} in file ${filename}`);
+        logger.error(`--> currentByte: ${currentByte} - ${filename}`)
       }
     });
   });
@@ -290,7 +291,7 @@ async function osm(filename: string, start: number, end: number) {
       currentByte += chunk.length;
 
       if (count % LOG_INCREMENT === 0) {
-        logger.info(`CHUNK COUNT: ${count}`, filename);
+        logger.info(`CHUNK COUNT: ${count} in file ${filename}`);
       }
 
       count++;

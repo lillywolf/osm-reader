@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: osm-reader-deploy
 spec:
-  replicas: 2
+  replicas: 6
   selector:
     matchLabels:
       app: osm-reader

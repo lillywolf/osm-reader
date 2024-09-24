@@ -53,10 +53,9 @@ async function osm(filename: string, start: number, end: number) {
     }
   );
 
-  osmXmlParser.on('node', async (node: TagData) => {
-    // if (count % LOG_INCREMENT === 0) {
-    //   logger.info(`FOUND <node>: upsert node ${JSON.stringify(node.properties)}`, filename);
-    // }
+  const sleep = t => new Promise((resolve, reject) => setTimeout(resolve, t));
+
+  async function upsertNode(node: TagData) {
     try {
       await db.upsert({
         sql,
@@ -79,14 +78,26 @@ async function osm(filename: string, start: number, end: number) {
     }
     catch (e) {
       logger.error(`POSTGRES ERROR: insert failed for upsert <node /> ${node.properties.id} in file ${filename}`);
-      logger.error(`--> currentByte: ${currentByte} - ${filename}`)
+      logger.error(`--> currentByte: ${currentByte} - ${filename}`);
+
+      if (e.code === 'CONNECT_TIMEOUT') {
+        await sleep(100);
+        await upsertNode(node);
+      }
     }
+  }
+
+  osmXmlParser.on('node', async (node: TagData) => {
+    // if (count % LOG_INCREMENT === 0) {
+    //   logger.info(`FOUND <node>: upsert node ${JSON.stringify(node.properties)}`, filename);
+    // }
+    await upsertNode(node);
     node.children?.forEach(async (tag) => {
       try {
-        // if (count % LOG_INCREMENT === 0) {
-        //   logger.info(`FOUND <tag>: upsert <tag /> with key = ${tag.properties.k} and value = ${tag.properties.v} for node id ${node.properties.id}`, filename);
-        // }
-        await db.upsert({
+        if (count % LOG_INCREMENT === 0) {
+          logger.info(`FOUND <tag>: upsert <tag /> with key = ${tag.properties.k} and value = ${tag.properties.v} for node id ${node.properties.id}`, filename);
+        }
+        db.upsert({
           sql,
           table: 'osm_meta_tags',
           data: {
@@ -142,7 +153,7 @@ async function osm(filename: string, start: number, end: number) {
         // if (count % LOG_INCREMENT === 0) {
         //   logger.info(`FOUND <nd>: upsert <nd /> where ref = ${nd.properties.ref} and way id = ${way.properties.id}`, filename);
         // }
-        await db.insert({
+        db.insert({
           sql,
           table: 'osm_ways_nodes',
           data: {
@@ -162,7 +173,7 @@ async function osm(filename: string, start: number, end: number) {
         // if (count % LOG_INCREMENT === 0) {
         //   logger.info(`FOUND <tag>: upsert <tag /> where key = ${tag.properties.k} and value = ${tag.properties.v} and way id = ${way.properties.id}`, filename);
         // }
-        await db.upsert({
+        db.upsert({
           sql,
           table: 'osm_meta_tags',
           data: {
@@ -215,7 +226,7 @@ async function osm(filename: string, start: number, end: number) {
     const memberElements = relation.children?.filter((child) => child.name === 'member');
     const tagElements = relation.children?.filter((child) => child.name === 'tag');
     try {
-      db.remove({
+      await db.remove({
         sql,
         table: 'osm_relations_members',
         conditions: {
@@ -232,7 +243,7 @@ async function osm(filename: string, start: number, end: number) {
         // if (count % LOG_INCREMENT === 0) {
         //   logger.info(`FOUND <member>: upsert <member /> where ref = ${member.properties.ref} and relation id = ${relation.properties.id}`, filename);
         // }
-        await db.insert({
+        db.insert({
           sql,
           table: 'osm_relations_members',
           data: {
@@ -252,7 +263,7 @@ async function osm(filename: string, start: number, end: number) {
         // if (count % LOG_INCREMENT === 0) {
         //   logger.info(`FOUND <tag>: upsert <tag /> where k = ${tag.properties.k}, v = ${tag.properties.v}, relation.id = ${relation.properties.id}`, filename);
         // }
-        await db.upsert({
+        db.upsert({
           sql,
           table: 'osm_meta_tags',
           data: {
@@ -287,7 +298,7 @@ async function osm(filename: string, start: number, end: number) {
   await connect();
 
   readableStream
-    .on('data', (chunk) => {
+    .on('data', async (chunk) => {
       currentByte += chunk.length;
 
       if (count % LOG_INCREMENT === 0) {
@@ -295,9 +306,7 @@ async function osm(filename: string, start: number, end: number) {
       }
 
       count++;
-      readableStream.pause();
-      setTimeout(() => {
-        count++;
+      setTimeout(async () => {
         osmXmlParser.handleChunk(chunk.toString());
         readableStream.resume();
       }, 10);

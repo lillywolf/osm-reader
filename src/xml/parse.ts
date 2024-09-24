@@ -48,7 +48,7 @@ class OSMXmlParser {
 
       // If the tag is the parent <?xml> tag
       if (nextParent.tag.match(/<\?(\w*) (.*)\?>/)) {
-        this.chunk = this.chunk.slice(nextParent.lastIndex)
+        this.chunk = this.chunk.slice(nextParent.lastIndex);
         this.handleChunk();
         return;
       };
@@ -129,7 +129,7 @@ class OSMXmlParser {
     this.callbackMap[this.currentParentTag.name](this.currentParentTag);
 
     // Get the next chunk and pass it into the recursive function
-    this.chunk = this.chunk.toString().slice(this.getCurrentParentLastIndex(chunkId) + closingParent.lastIndex);
+    this.chunk = this.chunk.slice(this.getCurrentParentLastIndex(chunkId) + closingParent.lastIndex);
 
     this.currentParentTag = null;
     this.handleChunk();

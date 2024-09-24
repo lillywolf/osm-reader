@@ -54,7 +54,7 @@ async function osm(filename: string, start: number, end: number) {
     }
   );
 
-  async function upsertNode(node: TagData) {
+  async function upsertNode(node: TagData, tryCount: number = 0) {
     try {
       await db.upsert({
         sql,
@@ -76,13 +76,12 @@ async function osm(filename: string, start: number, end: number) {
       })
     }
     catch (e) {
-      logger.error(`POSTGRES ERROR: insert failed for upsert <node /> ${node.properties.id} in file ${filename}`);
+      console.log('>> tryCount', tryCount)
       logger.error(`--> currentByte: ${currentByte} - ${filename}`)
 
-      // if (e.code === 'CONNECT_TIMEOUT') {
-        await sleep(10);
-        await upsertNode(node);
-      // }
+      await sleep(10);
+      console.log('>> sleep over')
+      await upsertNode(node, tryCount++);
     }
   }
 

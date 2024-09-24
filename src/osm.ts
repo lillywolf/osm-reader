@@ -79,10 +79,10 @@ async function osm(filename: string, start: number, end: number) {
       logger.error(`POSTGRES ERROR: insert failed for upsert <node /> ${node.properties.id} in file ${filename}`);
       logger.error(`--> currentByte: ${currentByte} - ${filename}`)
 
-      if (e.code === 'CONNECT_TIMEOUT') {
+      // if (e.code === 'CONNECT_TIMEOUT') {
         await sleep(10);
         await upsertNode(node);
-      }
+      // }
     }
   }
 

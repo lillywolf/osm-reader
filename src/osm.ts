@@ -4,10 +4,11 @@ import path from 'path';
 import * as db from './db';
 import OSMXmlParser, { TagData } from './xml/parse';
 import Logger from './logger';
+import sleep from './util/sleep';
 
 dotenv.config({ path: '../.env' });
 
-const LOG_INCREMENT = 1000;
+const LOG_INCREMENT = 100;
 
 let sql;
 
@@ -47,13 +48,11 @@ async function osm(filename: string, start: number, end: number) {
   const readableStream = fs.createReadStream(
     filepath,
     {
-      highWaterMark: 1000,
+      highWaterMark: 10000,
       start,
       ...(end && {end})
     }
   );
-
-  const sleep = t => new Promise((resolve, reject) => setTimeout(resolve, t));
 
   async function upsertNode(node: TagData) {
     try {
@@ -78,10 +77,10 @@ async function osm(filename: string, start: number, end: number) {
     }
     catch (e) {
       logger.error(`POSTGRES ERROR: insert failed for upsert <node /> ${node.properties.id} in file ${filename}`);
-      logger.error(`--> currentByte: ${currentByte} - ${filename}`);
+      logger.error(`--> currentByte: ${currentByte} - ${filename}`)
 
       if (e.code === 'CONNECT_TIMEOUT') {
-        await sleep(100);
+        await sleep(10);
         await upsertNode(node);
       }
     }
@@ -306,10 +305,11 @@ async function osm(filename: string, start: number, end: number) {
       }
 
       count++;
+      readableStream.pause();
       setTimeout(async () => {
         osmXmlParser.handleChunk(chunk.toString());
         readableStream.resume();
-      }, 10);
+      }, 20);
     })
     .on('error', (e) => {
       logger.error(`ERROR: elements - stream read error in file ${filename} at byte ${currentByte}`, e);

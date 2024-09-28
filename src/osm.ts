@@ -452,7 +452,7 @@ async function osm(filename: string, start: number, end: number) {
       timeoutId = setTimeout(async () => {
         osmXmlParser.handleChunk(chunk.toString());
         readableStream.resume();
-      }, 60);
+      }, 100);
     })
     .on('error', (e) => {
       logger.error(`ERROR: elements - stream read error in file ${filename} at byte ${currentByte}`, e);

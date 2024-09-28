@@ -35,12 +35,13 @@ class OSMXmlParser {
     // If there is a chunk left over from the last run
     // Append it to the current chunk
     this.chunk = this.chunk + _chunk;
+    _chunk = '';
 
     if (!this.chunk.length) return;
 
     if (!this.currentParentTag) {
       // Get the next parent tag
-      const nextParent = getNextParentTag(this.chunk);
+      let nextParent = getNextParentTag(this.chunk);
 
       // If none found, exit early
       // Note that _chunk has already been appended to this.chunk
@@ -50,6 +51,7 @@ class OSMXmlParser {
       if (nextParent.tag.match(/<\?(\w*) (.*)\?>/)) {
         this.chunk = this.chunk.slice(nextParent.lastIndex);
         this.handleChunk();
+        nextParent = null;
         return;
       };
 
@@ -82,7 +84,7 @@ class OSMXmlParser {
     }
 
     // Match the next closing parent tag
-    const chunkAfterParentTag = this.chunk.slice(this.getCurrentParentLastIndex(chunkId));
+    let chunkAfterParentTag = this.chunk.slice(this.getCurrentParentLastIndex(chunkId));
     const closingParent = getClosingTag(chunkAfterParentTag);
 
     // If none found, break out of the processing sequence
@@ -92,11 +94,11 @@ class OSMXmlParser {
     };
 
     // Get the string inside the parent tag
-    const chunkInsideParentTag = chunkAfterParentTag.slice(0, closingParent.index);
+    let chunkInsideParentTag = chunkAfterParentTag.slice(0, closingParent.index);
 
     // Parse the child tags out of the inner string
     // const childTagRegex = new RegExp(/<(.*)\/>/);
-    const childTags = chunkInsideParentTag.match(/<(.*)\/>/g);
+    let childTags = chunkInsideParentTag.match(/<(.*)\/>/g);
 
     // Get the child tags' properties
     this.currentParentTag.children = childTags?.map((childTag) => {
@@ -119,6 +121,10 @@ class OSMXmlParser {
       };
     })
     .filter(truthyFilter);
+
+    childTags = null;
+    chunkAfterParentTag = '';
+    chunkInsideParentTag = '';
 
     if (!this.callbackMap[this.currentParentTag.name]) {
       logger.error(`ERROR: No callback found for tagName`, this.currentParentTag.name);
